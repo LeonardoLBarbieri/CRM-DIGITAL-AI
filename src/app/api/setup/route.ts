@@ -1,38 +1,43 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
-    // Verifica se já existe algum gerente
-    const managerExists = await prisma.user.findFirst({
-      where: { role: "GERENTE" }
-    });
+    const hashedPassword = await bcrypt.hash("123456", 10);
 
-    if (managerExists) {
-      return NextResponse.json({ message: "Gerente já existe." }, { status: 400 });
+    // 1. Garante Gerente
+    let manager = await prisma.user.findUnique({ where: { email: "gerente@sistema.com" } });
+    if (!manager) {
+      manager = await prisma.user.create({
+        data: {
+          name: "Gerente Principal",
+          email: "gerente@sistema.com",
+          password: hashedPassword,
+          role: "GERENTE"
+        }
+      });
     }
 
-    const hashedPassword = await bcrypt.hash("gerente123", 10);
-
-    const newManager = await prisma.user.create({
-      data: {
-        name: "Gerente Principal",
-        email: "gerente@sistema.com",
-        password: hashedPassword,
-        role: "GERENTE"
-      }
-    });
+    // 2. Garante Corretor
+    let broker = await prisma.user.findUnique({ where: { email: "corretor@sistema.com" } });
+    if (!broker) {
+      broker = await prisma.user.create({
+        data: {
+          name: "Corretor Demo",
+          email: "corretor@sistema.com",
+          password: hashedPassword,
+          role: "CORRETOR"
+        }
+      });
+    }
 
     return NextResponse.json({ 
-      message: "Gerente criado com sucesso!", 
-      email: newManager.email,
-      password: "gerente123" // Apenas para exibição inicial!
+      success: true,
+      message: "Contas de demonstração prontas!"
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Erro ao criar gerente" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao preparar contas" }, { status: 500 });
   }
 }
