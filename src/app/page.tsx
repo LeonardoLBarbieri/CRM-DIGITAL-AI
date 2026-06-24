@@ -139,7 +139,8 @@ export default function Home() {
       const res = await fetch("/api/leads");
       if (res.ok) {
         const data = await res.json();
-        setLeads(data);
+        // API returns { leads, total, page, limit } or array (backwards compat)
+        setLeads(Array.isArray(data) ? data : (data.leads || []));
       }
     } catch (e) {
       console.error(e);

@@ -66,8 +66,7 @@ export async function POST(req: Request) {
     const body = await req.json()
 
     const missingFields: string[] = []
-    if (!body.name)                        missingFields.push('name')
-    if (!body.phone && !body.whatsapp)     missingFields.push('phone ou whatsapp')
+    if (!body.name) missingFields.push('name')
 
     if (missingFields.length > 0) {
       return NextResponse.json(
