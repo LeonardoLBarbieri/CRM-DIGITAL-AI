@@ -2,13 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, LabelList 
 } from "recharts";
-import { Users, Calendar, DollarSign, TrendingUp, CheckCircle, Target, ArrowUpRight } from "lucide-react";
+import { Users, Calendar, DollarSign, TrendingUp, CheckCircle, Target, ArrowUpRight, X } from "lucide-react";
 
 export function ManagerDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const toggleFilter = (filterName: string) => {
+    setActiveFilter(activeFilter === filterName ? null : filterName);
+  };
 
   useEffect(() => {
     // In a real app, this would fetch from /api/dashboard/stats
@@ -65,10 +70,10 @@ export function ManagerDashboard() {
 
       {/* Top Stats Cards — Spatial UI */}
       <div className="perspective-container grid grid-cols-2 md:grid-cols-4 gap-5 relative z-10">
-        <StatCard title="Total de Leads" value={stats.totalLeads} icon={<Users size={20} />} trend="+12% este mês" color="blue" delay={0} />
-        <StatCard title="Visitas Agendadas" value={stats.visitsScheduled} icon={<Calendar size={20} />} trend="5 para esta semana" color="purple" delay={1} />
-        <StatCard title="Vendas Concluídas" value={stats.salesCompleted} icon={<CheckCircle size={20} />} trend="+2 que o mês passado" color="emerald" delay={2} />
-        <StatCard title="Taxa de Conversão" value={`${stats.conversionRate}%`} icon={<Target size={20} />} trend="+1.5% este mês" color="orange" delay={3} />
+        <StatCard title="Total de Leads" value={stats.totalLeads} icon={<Users size={20} />} trend="+12% este mês" color="blue" delay={0} isActive={activeFilter === 'Total de Leads'} hasActiveFilter={!!activeFilter} onClick={() => toggleFilter('Total de Leads')} />
+        <StatCard title="Visitas Agendadas" value={stats.visitsScheduled} icon={<Calendar size={20} />} trend="5 para esta semana" color="purple" delay={1} isActive={activeFilter === 'Visitas Agendadas'} hasActiveFilter={!!activeFilter} onClick={() => toggleFilter('Visitas Agendadas')} />
+        <StatCard title="Vendas Concluídas" value={stats.salesCompleted} icon={<CheckCircle size={20} />} trend="+2 que o mês passado" color="emerald" delay={2} isActive={activeFilter === 'Vendas Concluídas'} hasActiveFilter={!!activeFilter} onClick={() => toggleFilter('Vendas Concluídas')} />
+        <StatCard title="Taxa de Conversão" value={`${stats.conversionRate}%`} icon={<Target size={20} />} trend="+1.5% este mês" color="orange" delay={3} isActive={activeFilter === 'Taxa de Conversão'} hasActiveFilter={!!activeFilter} onClick={() => toggleFilter('Taxa de Conversão')} />
       </div>
 
       <div className="perspective-container grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
@@ -140,25 +145,34 @@ export function ManagerDashboard() {
           </div>
         </div>
         
-        {/* Distribuição — 3D Chart Panel */}
+        {/* Distribuição — 3D Chart Panel with Filter Interactivity */}
         <div className="chart-panel-glass p-6 lg:col-span-3">
-          <h3 className="font-semibold text-lg mb-6 relative z-10">Distribuição de Leads</h3>
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <h3 className="font-semibold text-lg">Distribuição de Leads</h3>
+            {activeFilter && (
+              <div className="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium animate-in fade-in flex items-center gap-2">
+                Filtrando: {activeFilter}
+                <button onClick={() => setActiveFilter(null)} className="hover:text-white transition-colors">
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+          </div>
           <div className="h-64 w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.leadsByStatus} layout="vertical" margin={{ left: 20 }}>
+              <BarChart data={stats.leadsByStatus} layout="vertical" margin={{ top: 10, right: 50, left: 10, bottom: 10 }} barSize={16}>
                 <defs>
                   {stats.leadsByStatus.map((entry: any, index: number) => (
                     <linearGradient key={`grad-${index}`} id={`bar-${index}`} x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor={entry.color} stopOpacity={0.8} />
+                      <stop offset="0%" stopColor={entry.color} stopOpacity={0.7} />
                       <stop offset="100%" stopColor={entry.color} stopOpacity={1} />
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{ fill: '#8888AA', fontSize: 12 }} />
+                <XAxis type="number" hide domain={[0, 'dataMax + 10']} />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} tick={{ fill: '#8888AA', fontSize: 13, fontWeight: 500 }} />
                 <RechartsTooltip 
-                  cursor={{ fill: 'rgba(124, 58, 237, 0.04)' }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
                   contentStyle={{ 
                     borderRadius: '16px', 
                     border: '1px solid rgba(255,255,255,0.08)', 
@@ -167,11 +181,26 @@ export function ManagerDashboard() {
                     backdropFilter: 'blur(20px)',
                     color: '#F0F0F8',
                   }}
+                  labelStyle={{ color: '#FFFFFF', fontWeight: 'bold', paddingBottom: '4px' }}
+                  itemStyle={{ color: '#E0E0F0', fontSize: '14px' }}
                 />
-                <Bar dataKey="value" name="Leads" radius={[0, 8, 8, 0]}>
+                <Bar 
+                  dataKey="value" 
+                  name="Leads" 
+                  radius={[8, 8, 8, 8]} 
+                  background={{ fill: 'rgba(255, 255, 255, 0.03)', radius: 8 }}
+                  onClick={(data: any) => toggleFilter(data.name)}
+                  cursor="pointer"
+                >
                   {stats.leadsByStatus.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={`url(#bar-${index})`} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`url(#bar-${index})`} 
+                      opacity={activeFilter && activeFilter !== entry.name ? 0.3 : 1}
+                      style={{ transition: 'opacity 0.3s ease' }}
+                    />
                   ))}
+                  <LabelList dataKey="value" position="right" fill="#F0F0F8" fontSize={14} fontWeight={600} offset={12} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -183,19 +212,26 @@ export function ManagerDashboard() {
   );
 }
 
-function StatCard({ title, value, icon, trend, color, delay }: any) {
-  const colorMap: Record<string, { icon: string; glow: string }> = {
-    blue: { icon: "text-blue-400 bg-blue-500/10 border-blue-500/15", glow: "shadow-blue-500/5" },
-    purple: { icon: "text-purple-400 bg-purple-500/10 border-purple-500/15", glow: "shadow-purple-500/5" },
-    emerald: { icon: "text-emerald-400 bg-emerald-500/10 border-emerald-500/15", glow: "shadow-emerald-500/5" },
-    orange: { icon: "text-orange-400 bg-orange-500/10 border-orange-500/15", glow: "shadow-orange-500/5" },
+function StatCard({ title, value, icon, trend, color, delay, isActive, hasActiveFilter, onClick }: any) {
+  const colorMap: Record<string, { icon: string; glow: string; border: string }> = {
+    blue: { icon: "text-blue-400 bg-blue-500/10 border-blue-500/15", glow: "shadow-blue-500/5", border: "rgba(59, 130, 246, 0.5)" },
+    purple: { icon: "text-purple-400 bg-purple-500/10 border-purple-500/15", glow: "shadow-purple-500/5", border: "rgba(168, 85, 247, 0.5)" },
+    emerald: { icon: "text-emerald-400 bg-emerald-500/10 border-emerald-500/15", glow: "shadow-emerald-500/5", border: "rgba(16, 185, 129, 0.5)" },
+    orange: { icon: "text-orange-400 bg-orange-500/10 border-orange-500/15", glow: "shadow-orange-500/5", border: "rgba(249, 115, 22, 0.5)" },
   };
   const c = colorMap[color] || colorMap.blue;
 
   return (
     <div
-      className={`stat-card-spatial p-5 flex flex-col justify-between cursor-pointer ${c.glow}`}
-      style={{ animationDelay: `${delay * 100}ms` }}
+      onClick={onClick}
+      className={`stat-card-spatial p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 ${c.glow}`}
+      style={{ 
+        animationDelay: `${delay * 100}ms`,
+        opacity: hasActiveFilter && !isActive ? 0.3 : 1,
+        borderColor: isActive ? c.border : '',
+        boxShadow: isActive ? `0 0 0 1px ${c.border} inset, 0 16px 48px rgba(0,0,0,0.4)` : '',
+        transform: isActive ? 'translateY(-4px) scale(1.02)' : ''
+      }}
     >
       <div className="flex justify-between items-start mb-4">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>

@@ -51,7 +51,7 @@ interface AudioHistoryItem {
 // Main Component
 // ============================================================
 export default function AppDashboard() {
-  const [activeTab, setActiveTab] = useState<TabId>("crm");
+  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
   // === Roteiro State ===
   const [name, setName] = useState("");
