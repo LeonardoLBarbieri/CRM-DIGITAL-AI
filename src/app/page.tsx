@@ -139,7 +139,7 @@ export default function Home() {
       const res = await fetch("/api/leads");
       if (res.ok) {
         const data = await res.json();
-        setLeads(data);
+        setLeads(data.leads ?? data);
       }
     } catch (e) {
       console.error(e);
