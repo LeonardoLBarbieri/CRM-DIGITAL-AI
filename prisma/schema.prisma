@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?
+  whatsapp     String?
+  email        String?
+  city         String?
+  neighborhood String?
+  status       String   @default("Lead Novo")
+  temperature  String   @default("Frio")
+  incomeRange  String?
+  hasFgts      Boolean  @default(false)
+  downPayment  Float?
+  creditApproved Boolean @default(false)
+  propertyType String?
+  desiredArea  Float?
+  priceMin     Float?
+  priceMax     Float?
+  region       String?
+  bedrooms     Int?
+  parkingSpots Int?
+  development  String?
+  budget       String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  messages           WhatsAppMessage[]
+  history            LeadHistory[]
+  tasks              Task[]
+  campaignRecipients CampaignRecipient[]
+}
+
+model WhatsAppMessage {
+  id                String   @id @default(cuid())
+  leadId            String
+  body              String
+  sender            String
+  status            String   @default("enviada")
+  whatsappMessageId String?
+  isAutomated       Boolean  @default(false)
+  timestamp         DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model LeadHistory {
+  id         String   @id @default(cuid())
+  leadId     String
+  fromStatus String
+  toStatus   String
+  changedBy  String   @default("broker")
+  createdAt  DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  leadId      String
+  type        String
+  description String?
+  status      String    @default("pendente")
+  dueAt       DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  message     String
+  status      String    @default("draft")
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  recipients CampaignRecipient[]
+}
+
+model CampaignRecipient {
+  id         String    @id @default(cuid())
+  campaignId String
+  leadId     String
+  status     String    @default("pending")
+  sentAt     DateTime?
+  errorMsg   String?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  text      String
+  sender    String
+  timestamp DateTime @default(now())
+}
+
+model Commission {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  type        String   @default("income")
+  date        String
+  createdAt   DateTime @default(now())
+}
