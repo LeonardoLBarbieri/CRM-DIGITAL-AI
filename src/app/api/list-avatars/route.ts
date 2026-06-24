@@ -3,11 +3,20 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const apiKey = process.env.HEYGEN_API_KEY;
-    if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
-      return NextResponse.json(
-        { error: 'Chave da API da HeyGen não configurada.' },
-        { status: 500 }
-      );
+    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      return NextResponse.json({
+        avatars: [
+          {
+            id: 'demo-avatar',
+            name: 'Corretor (Demo)',
+            type: 'stock',
+            thumbnail: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80',
+            ownership: 'public'
+          }
+        ]
+      });
     }
 
     // List all avatar looks (both stock and private/digital_twin)

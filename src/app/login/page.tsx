@@ -33,37 +33,6 @@ export default function LoginPage() {
       setError("Ocorreu um erro ao fazer login.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (role: "GERENTE" | "CORRETOR") => {
-    setError("");
-    setLoading(true);
-
-    try {
-      // 1. Garante que as contas existem
-      await fetch("/api/setup");
-
-      // 2. Faz o login com a conta escolhida
-      const email = role === "GERENTE" ? "gerente@sistema.com" : "corretor@sistema.com";
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password: "123456",
-      });
-
-      if (res?.error) {
-        setError("Erro ao acessar conta de demonstração.");
-        setLoading(false);
-      } else {
-        router.push("/app");
-      }
-    } catch (err) {
-      setError("Erro de conexão.");
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
@@ -74,8 +43,8 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
             <LogIn className="w-8 h-8 text-blue-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Acesso ao Sistema</h1>
-          <p className="text-neutral-400 mt-2">Escolha seu perfil para testar</p>
+          <h1 className="text-2xl font-bold text-white">LB Digital AI</h1>
+          <p className="text-neutral-400 mt-2">Acesso ao Sistema Corporativo</p>
         </div>
 
         {error && (
@@ -84,64 +53,40 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="space-y-4 mb-8">
-          <button
-            onClick={() => handleDemoLogin("GERENTE")}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-3 px-4 rounded-xl transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? "Entrando..." : "Entrar como Gerente"}
-          </button>
-
-          <button
-            onClick={() => handleDemoLogin("CORRETOR")}
-            disabled={loading}
-            className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white font-medium py-3 px-4 rounded-xl transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? "Entrando..." : "Entrar como Corretor"}
-          </button>
-        </div>
-
-        <div className="relative mb-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-neutral-800"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-neutral-900 text-neutral-500">Ou use suas credenciais</span>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-1">
-              Email
+            <label className="block text-sm font-medium text-neutral-300 mb-1.5">
+              E-mail Profissional
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               placeholder="seu@email.com"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-1">
+            <label className="block text-sm font-medium text-neutral-300 mb-1.5">
               Senha
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               placeholder="••••••••"
+              required
             />
           </div>
+          
           <button
             type="submit"
             disabled={loading || !email || !password}
-            className="w-full bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-3 px-4 rounded-xl transition-all disabled:opacity-50 mt-4"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 mt-2 shadow-lg shadow-blue-500/20"
           >
-            Entrar com Email
+            {loading ? "Acessando..." : "Entrar no Sistema"}
           </button>
         </form>
       </div>

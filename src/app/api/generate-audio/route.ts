@@ -20,8 +20,16 @@ export async function POST(req: Request) {
     }
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
-      return NextResponse.json({ error: 'Chave da API da ElevenLabs não configurada.' }, { status: 500 });
+    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return NextResponse.json({
+        audioDataUrl: "data:audio/mpeg;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+        downloadUrl: "#",
+        filename: "demo_audio.mp3",
+        timestamp: Date.now(),
+      });
     }
 
     // Default voice settings with overrides from request

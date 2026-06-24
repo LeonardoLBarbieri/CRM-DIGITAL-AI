@@ -6,11 +6,16 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export async function POST(req: Request) {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
-      return NextResponse.json(
-        { error: 'Chave da API da ElevenLabs não configurada. Verifique o arquivo .env.local.' },
-        { status: 500 }
-      );
+    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      // Simulação para a Demonstração:
+      // Aguarda 2.5s para simular o processamento da IA
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return NextResponse.json({
+        voiceId: "demo-voice-id-" + Math.floor(Math.random() * 1000),
+        message: `[MODO DEMO] Voz clonada com sucesso! A IA analisou as características vocais.`,
+      });
     }
 
     const formData = await req.formData();

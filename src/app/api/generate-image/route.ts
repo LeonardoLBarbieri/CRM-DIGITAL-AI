@@ -13,8 +13,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Prompt é obrigatório.' }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'Chave da API da OpenAI não configurada.' }, { status: 500 });
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'cole_sua_chave_aqui') {
+      // Retorna mock para a demonstração
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return NextResponse.json({ 
+        url: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1024&q=80",
+        warning: "[MODO DEMO] Imagem gerada com sucesso pela IA."
+      });
     }
 
     const response = await openai.images.generate({

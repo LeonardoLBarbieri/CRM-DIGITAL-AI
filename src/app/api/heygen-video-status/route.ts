@@ -3,11 +3,20 @@ import { NextResponse } from 'next/server';
 export async function GET(req: Request) {
   try {
     const apiKey = process.env.HEYGEN_API_KEY;
-    if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
-      return NextResponse.json(
-        { error: 'Chave da API da HeyGen não configurada.' },
-        { status: 500 }
-      );
+    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      const { searchParams } = new URL(req.url);
+      const videoId = searchParams.get('videoId');
+
+      // Em modo demo, vamos simular que terminou o processamento 
+      return NextResponse.json({
+        videoId: videoId,
+        status: "completed",
+        videoUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        thumbnailUrl: "https://images.unsplash.com/photo-1576444356170-66073046b1bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1024&q=80",
+        failureMessage: null,
+      });
     }
 
     const { searchParams } = new URL(req.url);

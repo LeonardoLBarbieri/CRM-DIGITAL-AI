@@ -896,11 +896,9 @@ code, pre, .font-mono {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Kanban Column — deep glass well */
+/* Kanban Column — deep glass well (Removed backdrop-filter to fix react-beautiful-dnd drag offset bug) */
 .kanban-column-glass {
-  background: rgba(10, 10, 28, 0.5);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: rgba(15, 15, 30, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
   box-shadow:
@@ -933,7 +931,7 @@ code, pre, .font-mono {
   cursor: grab;
 }
 
-.lead-card-glass:hover {
+.lead-card-glass:not(.dragging):hover {
   transform: translateY(-3px) scale(1.02);
   border-color: rgba(124, 58, 237, 0.25);
   box-shadow:
@@ -949,9 +947,7 @@ code, pre, .font-mono {
 .lead-card-glass.dragging {
   border-color: rgba(124, 58, 237, 0.4);
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.5),
     0 0 40px rgba(124, 58, 237, 0.2);
-  transform: rotate(3deg) scale(1.08);
 }
 
 /* Premium Sidebar — deep glass with light edge */

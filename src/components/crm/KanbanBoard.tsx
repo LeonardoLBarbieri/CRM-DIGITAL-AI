@@ -83,7 +83,7 @@ export function KanbanBoard({ leads, onLeadMove, onLeadClick }: KanbanBoardProps
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="perspective-container flex gap-5 h-full min-w-max pb-4">
+      <div className="flex gap-5 h-full min-w-max pb-4">
         {KANBAN_COLUMNS.map((columnId) => {
           const columnLeads = leads.filter((l) => l.status === columnId);
           const accent = COLUMN_ACCENTS[columnId] || "from-gray-500/20 to-gray-600/5";

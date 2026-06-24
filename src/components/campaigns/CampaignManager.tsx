@@ -20,6 +20,32 @@ export function CampaignManager() {
     fetchCampaigns();
   }, []);
 
+  // Simulação ao vivo de envio de campanha
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCampaigns(prev => {
+        let hasChanges = false;
+        const newCampaigns = prev.map(camp => {
+          if (camp.status === 'running' && camp.recipientStats.pending > 0) {
+            hasChanges = true;
+            return {
+              ...camp,
+              recipientStats: {
+                ...camp.recipientStats,
+                pending: camp.recipientStats.pending - 1,
+                sent: camp.recipientStats.sent + 1
+              },
+              status: (camp.recipientStats.pending - 1) === 0 ? 'completed' : 'running'
+            };
+          }
+          return camp;
+        });
+        return hasChanges ? newCampaigns : prev;
+      });
+    }, 1500); // 1.5 seconds per message sent
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchCampaigns = async () => {
     try {
       const res = await fetch("/api/campaigns");

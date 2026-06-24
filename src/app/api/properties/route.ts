@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { writeFile } from 'fs/promises'
 import path from 'path'
-import pdfParse from 'pdf-parse'
+// @ts-ignore
+const pdfParse = require('pdf-parse');
 import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })

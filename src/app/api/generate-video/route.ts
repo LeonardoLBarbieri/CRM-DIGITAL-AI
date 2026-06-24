@@ -3,11 +3,14 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const apiKey = process.env.HEYGEN_API_KEY;
-    if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
-      return NextResponse.json(
-        { error: 'Chave da API da HeyGen não configurada. Verifique o arquivo .env.local.' },
-        { status: 400 }
-      );
+    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return NextResponse.json({
+        message: '[MODO DEMO] Vídeo enviado para processamento.',
+        videoId: 'demo-video-id-12345',
+      });
     }
 
     const { script, avatarId, voiceId, aspectRatio, resolution } = await req.json();

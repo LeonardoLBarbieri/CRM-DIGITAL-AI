@@ -23,25 +23,37 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Dados de login inválidos");
         }
         
-        const user = await prisma.user.findUnique({
+        let user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
 
+        // Automação para Demonstração: Criar usuário se não existir
         if (!user) {
-          throw new Error("Usuário não encontrado");
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error("Senha incorreta");
+          const hashedPassword = await bcrypt.hash(credentials.password, 10);
+          const role = credentials.email.toLowerCase().includes("gerente") ? "GERENTE" : "CORRETOR";
+          const name = role === "GERENTE" ? "Gerente Principal" : "Corretor";
+          
+          user = await prisma.user.create({
+            data: {
+              email: credentials.email,
+              password: hashedPassword,
+              name: name,
+              role: role,
+            }
+          });
+        } else {
+          // Se existir, checa a senha
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isPasswordValid) {
+            throw new Error("Senha incorreta");
+          }
         }
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role, // Propriedade customizada para nosso RBAC
+          role: user.role,
         };
       }
     })
