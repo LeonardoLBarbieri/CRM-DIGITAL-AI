@@ -95,3 +95,4 @@ prisma/*.db-journal
 # SKILLS DE DESIGNER (LOCAL)
 # ===========================
 .skills/
+.agent/
