@@ -90,3 +90,8 @@ ehthumbs.db
 # ===========================
 prisma/*.db
 prisma/*.db-journal
+
+# ===========================
+# SKILLS DE DESIGNER (LOCAL)
+# ===========================
+.skills/
