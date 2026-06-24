@@ -6,6 +6,8 @@ import {
 } from "recharts";
 import { Users, Calendar, DollarSign, TrendingUp, CheckCircle, Target, ArrowUpRight, X } from "lucide-react";
 
+import { TeamManager } from "./TeamManager";
+
 export function ManagerDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export function ManagerDashboard() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in relative overflow-hidden">
+    <div className="space-y-8 animate-in fade-in relative overflow-hidden pb-12">
       <header className="mb-8 relative z-10">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Gerencial</h1>
         <p className="text-muted-foreground mt-2">Visão geral do funil de vendas, conversão e receitas.</p>
@@ -208,6 +210,8 @@ export function ManagerDashboard() {
         </div>
 
       </div>
+
+      <TeamManager />
     </div>
   );
 }

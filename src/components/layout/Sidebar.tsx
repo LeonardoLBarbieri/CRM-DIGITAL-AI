@@ -1,14 +1,16 @@
 "use client";
+import { useSession } from "next-auth/react";
 import {
   BrainCircuit, BarChart3, MessageSquare, CalendarDays,
   Megaphone, PenTool, Mic, Video,
-  Image as ImageIcon, DollarSign, Menu, X, Home,
+  Image as ImageIcon, DollarSign, Menu, X, Home, Building2, Sparkles
+
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
-type TabId = "dashboard" | "crm" | "campanhas" | "tarefas" | "roteiro" | "voz" | "avatar" | "studio" | "financeiro";
+type TabId = "dashboard" | "crm" | "campanhas" | "tarefas" | "planner" | "properties" | "instagram" | "roteiro" | "voz" | "avatar" | "studio" | "financeiro";
 
 interface SidebarProps {
   activeTab: TabId;
@@ -18,32 +20,40 @@ interface SidebarProps {
 const navGroups = [
   {
     label: "Gestão",
+    allowedRoles: ["GERENTE"],
     items: [
       { id: "dashboard" as TabId, icon: <BarChart3 size={18} />, label: "Dashboard" },
-      { id: "crm" as TabId, icon: <MessageSquare size={18} />, label: "Gestão de Leads" },
       { id: "campanhas" as TabId, icon: <Megaphone size={18} />, label: "Disparos" },
-      { id: "tarefas" as TabId, icon: <CalendarDays size={18} />, label: "Minhas Tarefas" },
+      { id: "financeiro" as TabId, icon: <DollarSign size={18} />, label: "Gestão Financeira" },
+    ],
+  },
+  {
+    label: "Meu Trabalho",
+    allowedRoles: ["GERENTE", "CORRETOR"],
+    items: [
+      { id: "crm" as TabId, icon: <MessageSquare size={18} />, label: "Meus Leads" },
+      { id: "planner" as TabId, icon: <CalendarDays size={18} />, label: "Planner & Agenda" },
+      { id: "properties" as TabId, icon: <Building2 size={18} />, label: "Empreendimentos" },
     ],
   },
   {
     label: "Criação IA",
+    allowedRoles: ["GERENTE", "CORRETOR"],
     items: [
+      { id: "instagram" as TabId, icon: <Sparkles size={18} />, label: "Ideias Instagram" },
       { id: "roteiro" as TabId, icon: <PenTool size={18} />, label: "Criar Roteiro" },
       { id: "voz" as TabId, icon: <Mic size={18} />, label: "Voz & Áudio" },
       { id: "avatar" as TabId, icon: <Video size={18} />, label: "Gerar Avatar" },
       { id: "studio" as TabId, icon: <ImageIcon size={18} />, label: "Studio 3D" },
     ],
   },
-  {
-    label: "Financeiro",
-    items: [
-      { id: "financeiro" as TabId, icon: <DollarSign size={18} />, label: "Gestão Financeira" },
-    ],
-  },
 ];
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "CORRETOR";
+  const userName = session?.user?.name || "Corretor";
 
   const SidebarContent = () => (
     <>
@@ -69,7 +79,9 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
-        {navGroups.map((group) => (
+        {navGroups
+          .filter(g => g.allowedRoles.includes(userRole))
+          .map((group) => (
           <div key={group.label}>
             <p className="nav-group-label">{group.label}</p>
             <div className="space-y-0.5 mb-1">
@@ -98,8 +110,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             LB
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate">Leonardo B.</p>
-            <p className="text-[11px] text-muted-foreground">Plano Pro</p>
+            <p className="text-sm font-medium truncate">{userName}</p>
+            <p className="text-[11px] text-muted-foreground">{userRole}</p>
           </div>
         </div>
       </div>

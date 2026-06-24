@@ -31,13 +31,37 @@ model Lead {
   development  String?
   budget       String?
   notes        String?
+  brokerId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  broker             User?               @relation(fields: [brokerId], references: [id])
   messages           WhatsAppMessage[]
   history            LeadHistory[]
   tasks              Task[]
   campaignRecipients CampaignRecipient[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("CORRETOR") // GERENTE ou CORRETOR
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads     Lead[]
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  keyTopics   String?  
+  filePath    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model WhatsAppMessage {

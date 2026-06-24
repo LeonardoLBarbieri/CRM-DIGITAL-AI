@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 // ─────────────────────────────────────────────
 // GET /api/leads?status=&temperature=&page=&limit=
 // ─────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
 
     const status      = searchParams.get('status')      || undefined
@@ -14,9 +21,14 @@ export async function GET(req: Request) {
     const limit       = Math.max(1, parseInt(searchParams.get('limit') || '50', 10))
     const skip        = (page - 1) * limit
 
-    const where = {
+    const where: any = {
       ...(status      ? { status }      : {}),
       ...(temperature ? { temperature } : {}),
+    }
+
+    // Se for corretor, filtra apenas os leads dele. Se for gerente, vê todos.
+    if ((session.user as any).role === "CORRETOR") {
+      where.brokerId = (session.user as any).id;
     }
 
     const [leads, total] = await Promise.all([
@@ -134,7 +146,7 @@ export async function PUT(req: Request) {
       'name', 'phone', 'whatsapp', 'email', 'city', 'neighborhood',
       'status', 'temperature', 'incomeRange', 'hasFgts', 'downPayment',
       'creditApproved', 'propertyType', 'desiredArea', 'priceMin', 'priceMax',
-      'region', 'bedrooms', 'parkingSpots', 'development', 'budget', 'notes',
+      'region', 'bedrooms', 'parkingSpots', 'development', 'budget', 'notes', 'brokerId'
     ]
 
     const data: Record<string, unknown> = {}

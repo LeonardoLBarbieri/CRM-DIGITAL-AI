@@ -18,11 +18,14 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { Megaphone } from "lucide-react";
+import { PropertiesGallery } from "@/components/dashboard/PropertiesGallery";
+import { Planner } from "@/components/planner/Planner";
+import { InstagramGenerator } from "@/components/dashboard/InstagramGenerator";
 
 // ============================================================
 // Types
 // ============================================================
-type TabId = "roteiro" | "voz" | "avatar" | "crm" | "studio" | "financeiro" | "dashboard" | "tarefas" | "campanhas";
+type TabId = "roteiro" | "voz" | "avatar" | "crm" | "studio" | "financeiro" | "dashboard" | "tarefas" | "campanhas" | "properties" | "planner" | "instagram";
 
 interface Voice {
   voiceId: string;
@@ -629,6 +632,48 @@ export default function AppDashboard() {
                 className="tab-content-enter h-full"
               >
                 <TaskManager />
+              </motion.div>
+            )}
+
+            {/* ============ TAB: PLANNER ============ */}
+            {activeTab === "planner" && (
+              <motion.div
+                key="planner"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="tab-content-enter h-full"
+              >
+                <Planner />
+              </motion.div>
+            )}
+
+            {/* ============ TAB: EMPREENDIMENTOS ============ */}
+            {activeTab === "properties" && (
+              <motion.div
+                key="properties"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="tab-content-enter h-full"
+              >
+                <PropertiesGallery />
+              </motion.div>
+            )}
+
+            {/* ============ TAB: INSTAGRAM GENERATOR ============ */}
+            {activeTab === "instagram" && (
+              <motion.div
+                key="instagram"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="tab-content-enter h-full"
+              >
+                <InstagramGenerator />
               </motion.div>
             )}
 
