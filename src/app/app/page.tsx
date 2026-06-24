@@ -664,7 +664,7 @@ export default function AppDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                       <Building2 size={20} className="text-cyan-400" />
                       Dados do Empreendimento
@@ -734,7 +734,7 @@ export default function AppDashboard() {
 
                   {/* Script Result */}
                   {script && (
-                    <div className="glass-panel rounded-2xl p-6 border-purple-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="glass-card-3d p-6 border-purple-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-semibold text-lg text-purple-400">Roteiro Gerado</h3>
                         <button
@@ -785,7 +785,7 @@ export default function AppDashboard() {
 
                 {/* Preview Section */}
                 <div className="space-y-6">
-                  <div className="glass-panel rounded-2xl p-6 relative overflow-hidden h-[500px] flex flex-col items-center justify-center text-center border-dashed border-2 border-border/50">
+                  <div className="glass-card-3d p-6 relative overflow-hidden h-[500px] flex flex-col items-center justify-center text-center border-dashed border-2 border-border/50">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-cyan-500/5" />
                     <Video size={48} className="text-muted-foreground mb-4 opacity-50" />
                     <h3 className="font-medium text-lg mb-2">Preview do Avatar</h3>
@@ -825,7 +825,7 @@ export default function AppDashboard() {
                 <div className="lg:col-span-2 space-y-6">
 
                   {/* === Clone Voice Section === */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-semibold flex items-center gap-2">
                         <Upload size={20} className="text-purple-400" />
@@ -911,7 +911,7 @@ export default function AppDashboard() {
                   </div>
 
                   {/* === Voice Settings === */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                       <Volume2 size={20} className="text-cyan-400" />
                       Ajustes de Voz
@@ -946,7 +946,7 @@ export default function AppDashboard() {
                   </div>
 
                   {/* === Test Voice === */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                       <Play size={20} className="text-emerald-400" />
                       Testar Voz
@@ -999,7 +999,7 @@ export default function AppDashboard() {
                 {/* === Sidebar: Voice List + History === */}
                 <div className="space-y-6">
                   {/* Voice Selection */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-lg flex items-center gap-2">
                         <Volume2 size={18} className="text-purple-400" />
@@ -1051,7 +1051,7 @@ export default function AppDashboard() {
                   </div>
 
                   {/* Audio History */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                       <Clock size={18} className="text-cyan-400" />
                       Histórico
@@ -1128,7 +1128,7 @@ export default function AppDashboard() {
                 <div className="lg:col-span-2 space-y-6">
 
                   {/* Avatar Selection */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-xl font-semibold flex items-center gap-2">
                         <Video size={20} className="text-cyan-400" />
@@ -1193,7 +1193,7 @@ export default function AppDashboard() {
                   </div>
 
                   {/* Script + Settings */}
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                       <FileText size={20} className="text-purple-400" />
                       Roteiro do Vídeo
@@ -1274,7 +1274,7 @@ export default function AppDashboard() {
 
                   {/* Video Result */}
                   {videoUrl && (
-                    <div className="glass-panel rounded-2xl p-6 border-purple-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="glass-card-3d p-6 border-purple-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <div className="flex items-center justify-between mb-4">
                         <p className="font-semibold text-lg flex items-center gap-2 text-purple-400">
                           <Check size={18} /> Vídeo Gerado com Sucesso
@@ -1297,7 +1297,7 @@ export default function AppDashboard() {
 
                 {/* Info Sidebar */}
                 <div className="space-y-6">
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h3 className="font-semibold text-lg flex items-center gap-2 mb-4">
                       <Check size={18} className="text-green-400" />
                       Passo a Passo
@@ -1419,7 +1419,7 @@ export default function AppDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  <div className="glass-panel rounded-2xl p-6">
+                  <div className="glass-card-3d p-6">
                     <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                       <ImageIcon size={20} className="text-purple-400" />
                       Gerar Render Fotorrealista
@@ -1512,7 +1512,7 @@ export default function AppDashboard() {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="glass-panel rounded-2xl p-6 min-h-[400px] flex flex-col items-center justify-center border-dashed border-2 border-border/50 relative overflow-hidden">
+                  <div className="glass-card-3d p-6 min-h-[400px] flex flex-col items-center justify-center border-dashed border-2 border-border/50 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-cyan-500/5" />
                     
                     {studioVideoUrl ? (
@@ -1600,7 +1600,7 @@ export default function AppDashboard() {
                     </div>
 
                     {/* Monthly Goal Bar */}
-                    <div className="glass-panel rounded-2xl p-6 mb-6">
+                    <div className="glass-card-3d p-6 mb-6">
                       <div className="flex justify-between items-center mb-2">
                         <p className="font-semibold text-sm">Meta do Mês Atual</p>
                         <div className="flex items-center gap-2">
@@ -1634,7 +1634,7 @@ export default function AppDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Add Commission Form */}
-                <div className="glass-panel rounded-2xl p-6">
+                <div className="glass-card-3d p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <Plus size={18} className="text-purple-400" /> Registrar Entrada / Saída
                   </h2>
@@ -1676,7 +1676,7 @@ export default function AppDashboard() {
                 </div>
 
                 {/* Recent Transactions */}
-                <div className="glass-panel rounded-2xl p-6">
+                <div className="glass-card-3d p-6">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <BarChart3 size={18} className="text-cyan-400" /> Histórico de Lançamentos
                   </h2>

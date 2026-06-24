@@ -782,3 +782,280 @@ code, pre, .font-mono {
     -webkit-backdrop-filter: blur(10px);
   }
 }
+
+/* ============================================================
+   APPLE GLASS / VISIONOS PREMIUM EFFECTS
+   Spatial UI + Liquid Glass + 3D Depth
+   ============================================================ */
+
+/* 3D Card Container — enables perspective for child transforms */
+.perspective-container {
+  perspective: 1200px;
+  perspective-origin: center;
+}
+
+/* 3D Glass Card — VisionOS-inspired floating depth */
+.glass-card-3d {
+  background: rgba(15, 15, 35, 0.55);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 0.5px rgba(255, 255, 255, 0.06) inset,
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-3d::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(124, 58, 237, 0.03) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-card-3d:hover {
+  transform: translateY(-6px) rotateX(2deg) rotateY(-1deg) scale(1.02);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(124, 58, 237, 0.12),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Iridescent border glow on hover */
+.glass-card-3d::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 180deg,
+    rgba(124, 58, 237, 0) 0deg,
+    rgba(124, 58, 237, 0.15) 60deg,
+    rgba(8, 145, 178, 0.12) 120deg,
+    rgba(168, 85, 247, 0.1) 180deg,
+    rgba(124, 58, 237, 0) 240deg,
+    rgba(8, 145, 178, 0.08) 300deg,
+    rgba(124, 58, 237, 0) 360deg
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.glass-card-3d:hover::after {
+  opacity: 1;
+}
+
+/* Spatial Stat Card — larger 3D lift */
+.stat-card-spatial {
+  background: rgba(15, 15, 35, 0.45);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 24px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-spatial::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+}
+
+.stat-card-spatial:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.35),
+    0 0 30px rgba(124, 58, 237, 0.1),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1) inset;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Kanban Column — deep glass well */
+.kanban-column-glass {
+  background: rgba(10, 10, 28, 0.5);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    0 0 0 0.5px rgba(255, 255, 255, 0.03) inset;
+  position: relative;
+}
+
+.kanban-column-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+
+/* Kanban Lead Card — floating mini glass */
+.lead-card-glass {
+  background: rgba(18, 18, 42, 0.65);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.2),
+    0 0 0 0.5px rgba(255, 255, 255, 0.03) inset;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: grab;
+}
+
+.lead-card-glass:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(124, 58, 237, 0.25);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(124, 58, 237, 0.08),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
+}
+
+.lead-card-glass:active {
+  cursor: grabbing;
+}
+
+.lead-card-glass.dragging {
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(124, 58, 237, 0.2);
+  transform: rotate(3deg) scale(1.08);
+}
+
+/* Premium Sidebar — deep glass with light edge */
+.sidebar-glass-premium {
+  background: rgba(6, 6, 18, 0.88);
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+}
+
+.sidebar-glass-premium::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(124, 58, 237, 0.15) 30%,
+    rgba(8, 145, 178, 0.1) 70%,
+    transparent 100%
+  );
+}
+
+/* Glass input — premium feel */
+.input-glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+}
+
+.input-glass:focus {
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(124, 58, 237, 0.1),
+    0 0 20px rgba(124, 58, 237, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Chart panel — premium container */
+.chart-panel-glass {
+  background: rgba(12, 12, 30, 0.5);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-panel-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+
+/* Ambient glow orbs — background decoration */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: orb-drift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes orb-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.1); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+  100% { transform: translate(10px, -10px) scale(1.05); }
+}
+
+/* ============================================================
+   ACCESSIBILITY — Reduced Motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .glass-card-3d:hover,
+  .stat-card-spatial:hover,
+  .lead-card-glass:hover {
+    transform: none !important;
+  }
+}

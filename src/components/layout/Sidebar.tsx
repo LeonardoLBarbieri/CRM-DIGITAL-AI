@@ -2,10 +2,11 @@
 import {
   BrainCircuit, BarChart3, MessageSquare, CalendarDays,
   Megaphone, PenTool, Mic, Video,
-  Image as ImageIcon, DollarSign, Menu, X,
+  Image as ImageIcon, DollarSign, Menu, X, Home,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 type TabId = "dashboard" | "crm" | "campanhas" | "tarefas" | "roteiro" | "voz" | "avatar" | "studio" | "financeiro";
 
@@ -57,6 +58,13 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Avatar Imobiliário</p>
           </div>
         </div>
+        <Link
+          href="/"
+          className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-white/[0.04] cursor-pointer"
+        >
+          <Home size={14} />
+          Voltar ao Site
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -101,12 +109,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="w-60 glass-sidebar hidden md:flex flex-col h-screen sticky top-0">
+      <aside className="w-60 sidebar-glass-premium hidden md:flex flex-col h-screen sticky top-0">
         <SidebarContent />
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 glass-sidebar h-14 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 sidebar-glass-premium h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <BrainCircuit size={22} className="text-purple-400" />
           <span className="text-sm font-bold text-gradient">LB Digital AI</span>
@@ -135,7 +143,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-72 glass-sidebar z-50 md:hidden flex flex-col"
+              className="fixed top-0 left-0 bottom-0 w-72 sidebar-glass-premium z-50 md:hidden flex flex-col"
             >
               <div className="absolute top-3 right-3">
                 <button
