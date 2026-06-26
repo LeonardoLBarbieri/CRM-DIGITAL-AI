@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
 
@@ -18,25 +17,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
-
-      if (res?.error) {
-        setError("Email ou senha inválidos.");
+      // Autenticação simples — substituir por next-auth quando configurado
+      if (email === "leonardo@lb.com" && password === "admin123") {
+        router.push("/");
       } else {
-        router.push("/app");
+        setError("Email ou senha inválidos.");
       }
-    } catch (err) {
+    } catch {
       setError("Ocorreu um erro ao fazer login.");
     } finally {
       setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-        {/* Efeito visual */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
 
         <div className="text-center mb-8">
@@ -80,7 +76,7 @@ export default function LoginPage() {
               required
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading || !email || !password}

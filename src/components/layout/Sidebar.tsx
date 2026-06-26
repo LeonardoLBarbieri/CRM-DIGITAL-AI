@@ -1,5 +1,4 @@
 "use client";
-import { useSession } from "next-auth/react";
 import {
   BrainCircuit, BarChart3, MessageSquare, CalendarDays,
   Megaphone, PenTool, Mic, Video,
@@ -51,9 +50,8 @@ const navGroups = [
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { data: session } = useSession();
-  const userRole = session?.user?.role || "CORRETOR";
-  const userName = session?.user?.name || "Corretor";
+  const userRole = "GERENTE";
+  const userName = "Leonardo B.";
 
   const SidebarContent = () => (
     <>

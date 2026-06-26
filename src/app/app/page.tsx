@@ -93,6 +93,7 @@ export default function AppDashboard() {
   const [videoStatus, setVideoStatus] = useState("");
   const [videoScript, setVideoScript] = useState("");
   const [videoAspectRatio, setVideoAspectRatio] = useState("9:16");
+  const [videoBackgroundUrl, setVideoBackgroundUrl] = useState("");
   const [heygenAvatars, setHeygenAvatars] = useState<{ id: string; name: string; type: string; thumbnail: string | null; ownership: string }[]>([]);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [loadingAvatars, setLoadingAvatars] = useState(false);
@@ -496,6 +497,7 @@ export default function AppDashboard() {
           script: videoScript,
           avatarId: selectedAvatarId || undefined,
           aspectRatio: videoAspectRatio,
+          backgroundUrl: videoBackgroundUrl || undefined,
         }),
       });
       const data = await response.json();
@@ -1289,6 +1291,18 @@ export default function AppDashboard() {
                             </button>
                           ))}
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cenário de Fundo (Opcional)</label>
+                        <input
+                          type="url"
+                          value={videoBackgroundUrl}
+                          onChange={(e) => setVideoBackgroundUrl(e.target.value)}
+                          className="input-field"
+                          placeholder="Cole o link (URL) da imagem do apartamento decorado..."
+                        />
+                        <p className="text-xs text-muted-foreground text-purple-300">Dica: Cole o link de uma foto para o seu Avatar aparecer na frente do apartamento.</p>
                       </div>
 
                       <GradientButton

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const { script, avatarId, voiceId, aspectRatio, resolution } = await req.json();
+    const { script, avatarId, voiceId, aspectRatio, resolution, backgroundUrl } = await req.json();
 
     if (!script || script.trim().length === 0) {
       return NextResponse.json({ error: 'Roteiro é obrigatório para gerar o vídeo.' }, { status: 400 });
@@ -37,6 +37,13 @@ export async function POST(req: Request) {
       aspect_ratio: aspectRatio || '9:16', // default for Instagram Reels
       title: `LB Digital AI — ${new Date().toLocaleString('pt-BR')}`,
     };
+
+    if (backgroundUrl && backgroundUrl.trim().length > 0) {
+      payload.background = {
+        type: "image",
+        url: backgroundUrl.trim()
+      };
+    }
 
     // Add voice if provided
     if (voiceId) {
