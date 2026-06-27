@@ -8,7 +8,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // Retorna true se houver token (logado)
+      authorized: ({ token }) => true, // Retorna true sempre para desabilitar o login temporariamente
     },
     pages: {
       signIn: "/login",
@@ -16,7 +16,7 @@ export default withAuth(
   }
 );
 
-// Protege apenas as rotas dentro de /app
+// Protege apenas as rotas dentro de /app (comentado temporariamente)
 export const config = {
-  matcher: ["/app/:path*"],
+  // matcher: ["/app/:path*"],
 };
