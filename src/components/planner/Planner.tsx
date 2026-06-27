@@ -7,6 +7,7 @@ import { ptBR } from "date-fns/locale";
 
 export function Planner() {
   const [tasks, setTasks] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -18,34 +19,31 @@ export function Planner() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskType, setTaskType] = useState("visita");
   const [taskTime, setTaskTime] = useState("09:00");
-  const [taskClient, setTaskClient] = useState("");
+  const [taskLeadId, setTaskLeadId] = useState("");
   const [taskProperty, setTaskProperty] = useState("");
   const [taskNotes, setTaskNotes] = useState("");
 
   useEffect(() => {
-    fetchTasks();
+    fetchTasksAndLeads();
   }, []);
 
-  const fetchTasks = async () => {
+  const fetchTasksAndLeads = async () => {
     setLoading(true);
     try {
-      // Usando endpoint de tasks que vimos existir no projeto /api/tasks
+      // Fetch Tasks
       const res = await fetch("/api/tasks");
       if (res.ok) {
         const data = await res.json();
         setTasks(data);
-      } else {
-        // Fallback para leads se a rota não funcionar corretamente
-        const leadRes = await fetch("/api/leads");
-        if (leadRes.ok) {
-          const leadData = await leadRes.json();
-          const allTasks: any[] = [];
-          (leadData.leads || []).forEach((l: any) => {
-            if (l.tasks) {
-              l.tasks.forEach((t: any) => allTasks.push({...t, leadName: l.name}));
-            }
-          });
-          setTasks(allTasks);
+      }
+      // Fetch Leads
+      const leadRes = await fetch("/api/leads");
+      if (leadRes.ok) {
+        const leadData = await leadRes.json();
+        const leadsArray = Array.isArray(leadData) ? leadData : (leadData.leads || []);
+        setLeads(leadsArray);
+        if (leadsArray.length > 0) {
+          setTaskLeadId(leadsArray[0].id); // Seleciona o primeiro por padrão
         }
       }
     } catch (e) {
@@ -58,6 +56,11 @@ export function Planner() {
   const handleSaveTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskTitle) return;
+    
+    if (!taskLeadId) {
+      alert("Por favor, crie um Lead no CRM primeiro ou selecione um cliente.");
+      return;
+    }
 
     // Constrói a data/hora final
     const [hours, minutes] = taskTime.split(":");
@@ -68,9 +71,9 @@ export function Planner() {
       title: taskTitle,
       type: taskType,
       dueAt: finalDate.toISOString(),
-      description: `Cliente: ${taskClient}\nImóvel: ${taskProperty}\nNotas: ${taskNotes}`,
+      description: `Imóvel: ${taskProperty}\nNotas: ${taskNotes}`,
       status: "pendente",
-      leadId: "cm0z6x9m00000" // Um ID dummy caso não tenha lead selecionado, ou buscar no backend
+      leadId: taskLeadId 
     };
 
     try {
@@ -81,15 +84,12 @@ export function Planner() {
       });
       
       if (res.ok) {
-        fetchTasks();
+        fetchTasksAndLeads();
         setIsModalOpen(false);
         resetForm();
       } else {
-        alert("Erro ao salvar tarefa. O endpoint precisa de um LeadID válido.");
-        // Fallback visual temporário para o corretor não perder o planejamento na tela
-        setTasks([...tasks, { ...newTask, id: Date.now().toString(), lead: { name: taskClient } }]);
-        setIsModalOpen(false);
-        resetForm();
+        const err = await res.json();
+        alert(`Erro ao salvar tarefa: ${err.error || "Erro desconhecido"}`);
       }
     } catch (error) {
       console.error(error);
@@ -100,7 +100,7 @@ export function Planner() {
     setTaskTitle("");
     setTaskType("visita");
     setTaskTime("09:00");
-    setTaskClient("");
+    if (leads.length > 0) setTaskLeadId(leads[0].id);
     setTaskProperty("");
     setTaskNotes("");
   };
@@ -319,13 +319,20 @@ export function Planner() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-1"><User size={14} /> Cliente (Lead)</label>
-                  <input 
-                    type="text" 
-                    value={taskClient}
-                    onChange={(e) => setTaskClient(e.target.value)}
-                    placeholder="Nome do cliente"
-                    className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none transition-all"
-                  />
+                  <select 
+                    value={taskLeadId}
+                    onChange={(e) => setTaskLeadId(e.target.value)}
+                    className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none transition-all appearance-none"
+                    required
+                  >
+                    {leads.length === 0 ? (
+                      <option value="">Nenhum lead cadastrado</option>
+                    ) : (
+                      leads.map(lead => (
+                        <option key={lead.id} value={lead.id}>{lead.name}</option>
+                      ))
+                    )}
+                  </select>
                 </div>
               </div>
 
