@@ -83,21 +83,21 @@ export function KanbanBoard({ leads, onLeadMove, onLeadClick }: KanbanBoardProps
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-5 h-full min-w-max pb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 h-full pb-4">
         {KANBAN_COLUMNS.map((columnId) => {
           const columnLeads = leads.filter((l) => l.status === columnId);
           const accent = COLUMN_ACCENTS[columnId] || "from-gray-500/20 to-gray-600/5";
           const dot = COLUMN_DOT[columnId] || "bg-gray-400";
 
           return (
-            <div key={columnId} className="w-80 kanban-column-glass p-3.5 flex flex-col h-full shrink-0">
+            <div key={columnId} className="kanban-column-glass p-2 flex flex-col min-h-[250px]">
               {/* Column Header */}
-              <div className={`flex items-center justify-between mb-4 px-2 py-2 rounded-xl bg-gradient-to-r ${accent}`}>
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-2 h-2 rounded-full ${dot} shadow-sm`} />
-                  <h3 className="font-semibold text-sm text-foreground/90 tracking-tight">{columnId}</h3>
+              <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg bg-gradient-to-r ${accent}`}>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className={`w-1.5 h-1.5 rounded-full ${dot} shadow-sm shrink-0`} />
+                  <h3 className="font-semibold text-[11px] text-foreground/90 tracking-tight truncate">{columnId}</h3>
                 </div>
-                <span className="stat-card-spatial px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                <span className="stat-card-spatial px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
                   {columnLeads.length}
                 </span>
               </div>
@@ -107,7 +107,7 @@ export function KanbanBoard({ leads, onLeadMove, onLeadClick }: KanbanBoardProps
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-1 overflow-y-auto space-y-3 min-h-[150px] p-1.5 rounded-2xl transition-all duration-300 ${
+                    className={`flex-1 overflow-y-auto space-y-1.5 min-h-[100px] p-1 rounded-xl transition-all duration-300 ${
                       snapshot.isDraggingOver
                         ? "bg-primary/5 ring-1 ring-primary/20 ring-dashed"
                         : ""
@@ -121,41 +121,27 @@ export function KanbanBoard({ leads, onLeadMove, onLeadClick }: KanbanBoardProps
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             onClick={() => onLeadClick(lead)}
-                            className={`lead-card-glass p-4 group cursor-pointer ${
+                            className={`lead-card-glass p-2.5 group cursor-pointer ${
                               snapshot.isDragging ? "dragging" : ""
                             }`}
                           >
                             {/* Card Header */}
-                            <div className="flex justify-between items-start mb-2.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <GripVertical size={14} className="text-muted-foreground/40 shrink-0 group-hover:text-primary/50 transition-colors" />
-                                <h4 className="font-medium text-sm leading-tight truncate group-hover:text-primary transition-colors duration-200">
+                            <div className="flex justify-between items-start mb-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <GripVertical size={10} className="text-muted-foreground/40 shrink-0 group-hover:text-primary/50 transition-colors" />
+                                <h4 className="font-medium text-[11px] leading-tight truncate group-hover:text-primary transition-colors duration-200">
                                   {lead.name}
                                 </h4>
                               </div>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ml-2 shrink-0 border backdrop-blur-sm ${getTemperatureColor(lead.temperature)}`}>
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ml-1 shrink-0 border backdrop-blur-sm ${getTemperatureColor(lead.temperature)}`}>
                                 {lead.temperature || "Frio"}
                               </span>
                             </div>
                             
                             {/* Phone */}
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 pl-6">
-                              <MessageSquare size={12} className={lead.phone ? "text-green-400" : "text-muted-foreground/40"} />
-                              <span className="truncate">{lead.phone ? lead.phone : "Sem número"}</span>
-                            </div>
-
-                            {/* Tags */}
-                            <div className="flex gap-2 flex-wrap text-[10px] text-muted-foreground pl-6">
-                              {lead.budget && (
-                                <span className="flex items-center gap-1 bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] px-2 py-0.5 rounded-lg">
-                                  <DollarSign size={10} className="text-green-400" /> {lead.budget}
-                                </span>
-                              )}
-                              {lead.propertyType && (
-                                <span className="flex items-center gap-1 bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] px-2 py-0.5 rounded-lg">
-                                  <User size={10} className="text-blue-400" /> {lead.propertyType}
-                                </span>
-                              )}
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground pl-4">
+                              <MessageSquare size={10} className={lead.phone ? "text-green-400" : "text-muted-foreground/40"} />
+                              <span className="truncate">{lead.phone ? lead.phone : "Sem nº"}</span>
                             </div>
                           </div>
                         )}
