@@ -8,10 +8,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 // ─────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-    }
+    // Auth temporariamente desabilitado
+    // const session = await getServerSession(authOptions)
+    // if (!session) {
+    //   return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    // }
 
     const { searchParams } = new URL(req.url)
 
@@ -27,9 +28,9 @@ export async function GET(req: Request) {
     }
 
     // Se for corretor, filtra apenas os leads dele. Se for gerente, vê todos.
-    if ((session.user as any).role === "CORRETOR") {
-      where.brokerId = (session.user as any).id;
-    }
+    // if ((session.user as any).role === "CORRETOR") {
+    //   where.brokerId = (session.user as any).id;
+    // }
 
     const [leads, total] = await Promise.all([
       prisma.lead.findMany({

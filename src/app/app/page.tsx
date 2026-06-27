@@ -4,7 +4,7 @@ import {
   Loader2, Copy, Check, Upload, X, Download, Play, Pause,
   Volume2, ChevronRight, Clock, Trash2, RefreshCw, Music,
   MessageSquare, FileText, Plus, Image as ImageIcon, CalendarDays,
-  TrendingUp, DollarSign, Send, AlertCircle, ArrowUpCircle, ArrowDownCircle, BarChart3
+  TrendingUp, DollarSign, Send, AlertCircle, ArrowUpCircle, ArrowDownCircle, BarChart3, User
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -131,6 +131,13 @@ export default function AppDashboard() {
   const [waModalLead, setWaModalLead] = useState<any | null>(null);
   const [waTemplate, setWaTemplate] = useState(0);
 
+  // === CRM Novo Dropdown + Modals ===
+  const [showNovoDropdown, setShowNovoDropdown] = useState(false);
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [showNewBoardModal, setShowNewBoardModal] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [boardKey, setBoardKey] = useState(0);
+
   // Fetch Leads on mount
   useEffect(() => {
     if (activeTab === "crm") {
@@ -219,7 +226,10 @@ export default function AppDashboard() {
 
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLeadName) return;
+    if (!newLeadName) {
+      alert("Por favor, preencha o nome do Lead antes de clicar em Novo.");
+      return;
+    }
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -1419,31 +1429,43 @@ export default function AppDashboard() {
                     </button>
                     <input type="file" ref={csvFileRef} accept=".csv" className="hidden" onChange={handleCSVUpload} />
                     
-                    <form onSubmit={handleAddLead} className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Nome do Lead"
-                        value={newLeadName}
-                        onChange={(e) => setNewLeadName(e.target.value)}
-                        className="input-field !w-auto py-2 text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="WhatsApp"
-                        value={newLeadPhone}
-                        onChange={(e) => setNewLeadPhone(e.target.value)}
-                        className="input-field !w-32 py-2 text-sm"
-                      />
-                      <button type="submit" className="btn-primary py-2 px-4 text-sm flex items-center gap-2">
+                    {/* Botão Novo com Dropdown */}
+                    <div className="relative">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowNovoDropdown(!showNovoDropdown)}
+                        className="btn-primary py-2 px-4 text-sm flex items-center gap-2"
+                      >
                         <Plus size={16} /> Novo
                       </button>
-                    </form>
+                      {showNovoDropdown && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShowNovoDropdown(false)} />
+                          <div className="absolute right-0 top-full mt-2 z-50 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden w-48 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <button 
+                              onClick={() => { setShowNovoDropdown(false); setShowNewLeadModal(true); }}
+                              className="w-full text-left px-4 py-3 text-sm font-medium hover:bg-purple-500/10 flex items-center gap-3 transition-colors"
+                            >
+                              <User size={16} className="text-purple-400" /> Novo Lead
+                            </button>
+                            <div className="border-t border-border/50" />
+                            <button 
+                              onClick={() => { setShowNovoDropdown(false); setShowNewBoardModal(true); }}
+                              className="w-full text-left px-4 py-3 text-sm font-medium hover:bg-cyan-500/10 flex items-center gap-3 transition-colors"
+                            >
+                              <BarChart3 size={16} className="text-cyan-400" /> Novo Quadro
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 }
               />
 
               <div className="flex-1 overflow-x-auto overflow-y-hidden">
                 <KanbanBoard 
+                  key={boardKey}
                   leads={leads} 
                   onLeadMove={moveLead} 
                   onLeadClick={(lead) => setSelectedLead(lead)} 
@@ -1456,6 +1478,119 @@ export default function AppDashboard() {
                   onClose={() => setSelectedLead(null)}
                   onSave={handleSaveLead}
                 />
+              )}
+
+              {/* Modal: Novo Lead */}
+              {showNewLeadModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                  <div className="bg-popover border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden">
+                    <div className="flex justify-between items-center p-5 border-b border-border/50 bg-secondary/30">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Plus className="text-purple-500" size={18} /> Novo Lead
+                      </h3>
+                      <button onClick={() => setShowNewLeadModal(false)} className="text-muted-foreground hover:text-white p-1 rounded-md hover:bg-white/10">
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <form onSubmit={(e) => { handleAddLead(e); if (newLeadName) setShowNewLeadModal(false); }} className="p-6 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Lead *</label>
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Ex: João Silva"
+                          value={newLeadName}
+                          onChange={(e) => setNewLeadName(e.target.value)}
+                          className="input-field text-sm"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">WhatsApp</label>
+                        <input
+                          type="tel"
+                          placeholder="(31) 99999-9999"
+                          value={newLeadPhone}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            let formatted = digits;
+                            if (digits.length > 2) formatted = `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+                            if (digits.length > 7) formatted = `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+                            setNewLeadPhone(formatted);
+                          }}
+                          className="input-field text-sm"
+                        />
+                      </div>
+                      <div className="pt-3 flex justify-end gap-3 border-t border-border/50">
+                        <button type="button" onClick={() => setShowNewLeadModal(false)} className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-xl transition-colors">Cancelar</button>
+                        <button type="submit" className="btn-primary py-2 px-5 text-sm flex items-center gap-2">
+                          <Plus size={14} /> Criar Lead
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal: Novo Quadro */}
+              {showNewBoardModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                  <div className="bg-popover border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden">
+                    <div className="flex justify-between items-center p-5 border-b border-border/50 bg-secondary/30">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <BarChart3 className="text-cyan-500" size={18} /> Novo Quadro
+                      </h3>
+                      <button onClick={() => setShowNewBoardModal(false)} className="text-muted-foreground hover:text-white p-1 rounded-md hover:bg-white/10">
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Nome do Quadro *</label>
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Ex: Pré-Qualificação, Documentação..."
+                          value={newBoardName}
+                          onChange={(e) => setNewBoardName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && newBoardName.trim()) {
+                              const stored = JSON.parse(localStorage.getItem("lb-kanban-columns") || "null");
+                              const cols = stored || ["Lead Novo","Primeiro Contato","Qualificação","Em Negociação","Visita Agendada","Visita Realizada","Proposta Enviada","Aguardando Resposta","Reserva Efetuada","Contrato Assinado","Venda Concluída","Lead Perdido"];
+                              if (cols.includes(newBoardName.trim())) { alert("Já existe um quadro com esse nome!"); return; }
+                              cols.push(newBoardName.trim());
+                              localStorage.setItem("lb-kanban-columns", JSON.stringify(cols));
+                              setNewBoardName("");
+                              setShowNewBoardModal(false);
+                              setBoardKey(k => k + 1);
+                            }
+                          }}
+                          className="input-field text-sm"
+                        />
+                      </div>
+                      <div className="pt-3 flex justify-end gap-3 border-t border-border/50">
+                        <button type="button" onClick={() => setShowNewBoardModal(false)} className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-xl transition-colors">Cancelar</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!newBoardName.trim()) return;
+                            const stored = JSON.parse(localStorage.getItem("lb-kanban-columns") || "null");
+                            const cols = stored || ["Lead Novo","Primeiro Contato","Qualificação","Em Negociação","Visita Agendada","Visita Realizada","Proposta Enviada","Aguardando Resposta","Reserva Efetuada","Contrato Assinado","Venda Concluída","Lead Perdido"];
+                            if (cols.includes(newBoardName.trim())) { alert("Já existe um quadro com esse nome!"); return; }
+                            cols.push(newBoardName.trim());
+                            localStorage.setItem("lb-kanban-columns", JSON.stringify(cols));
+                            setNewBoardName("");
+                            setShowNewBoardModal(false);
+                            setBoardKey(k => k + 1);
+                          }}
+                          className="btn-primary py-2 px-5 text-sm flex items-center gap-2"
+                        >
+                          <Plus size={14} /> Criar Quadro
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </motion.div>
           )}
