@@ -23,10 +23,6 @@ export function Planner() {
   const [taskProperty, setTaskProperty] = useState("");
   const [taskNotes, setTaskNotes] = useState("");
 
-  useEffect(() => {
-    fetchTasksAndLeads();
-  }, []);
-
   const fetchTasksAndLeads = async () => {
     setLoading(true);
     try {
@@ -52,6 +48,10 @@ export function Planner() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTasksAndLeads();
+  }, []);
 
   const handleSaveTask = async (e: React.FormEvent) => {
     e.preventDefault();

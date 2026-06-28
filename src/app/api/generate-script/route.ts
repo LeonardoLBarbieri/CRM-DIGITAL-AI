@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getAIClient } from '@/lib/nvidia-client';
 
 export async function POST(req: Request) {
   try {
@@ -38,12 +34,15 @@ DIFERENCIAIS: ${features}
 ESTILO: ${style}
 FORMATO: ${format}`;
 
-    const completion = await openai.chat.completions.create({
+    // Seleciona automaticamente NVIDIA NIM (grátis) ou OpenAI
+    const { client, defaultModel } = getAIClient();
+
+    const completion = await client.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      model: 'gpt-4o-mini', // We can use gpt-4o-mini for speed and cost-effectiveness
+      model: defaultModel,
     });
 
     const script = completion.choices[0].message.content;
@@ -51,6 +50,6 @@ FORMATO: ${format}`;
     return NextResponse.json({ script });
   } catch (error) {
     console.error('Error generating script:', error);
-    return NextResponse.json({ error: 'Falha ao gerar o roteiro. Verifique sua chave de API da OpenAI.' }, { status: 500 });
+    return NextResponse.json({ error: 'Falha ao gerar o roteiro. Configure NVIDIA_API_KEY ou OPENAI_API_KEY no .env.local.' }, { status: 500 });
   }
 }

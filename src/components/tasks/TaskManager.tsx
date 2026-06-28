@@ -10,10 +10,6 @@ export function TaskManager() {
   const [tasks, setTasks] = useState<TaskWithLead[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
   const fetchTasks = async () => {
     setLoading(true);
     try {
@@ -28,6 +24,10 @@ export function TaskManager() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   const completeTask = async (taskId: string) => {
     try {

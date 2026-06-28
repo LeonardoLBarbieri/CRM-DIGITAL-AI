@@ -53,7 +53,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const userRole = "GERENTE";
   const userName = "Leonardo B.";
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <>
       {/* Logo */}
       <div className="p-5 border-b border-border/50">
@@ -120,7 +120,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside className="w-60 sidebar-glass-premium hidden md:flex flex-col h-screen sticky top-0">
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* Mobile Header */}
@@ -163,7 +163,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   <X size={18} />
                 </button>
               </div>
-              <SidebarContent />
+              {sidebarContent}
             </motion.aside>
           </>
         )}

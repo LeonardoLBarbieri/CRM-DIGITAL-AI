@@ -2,12 +2,94 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
+/**
+ * Gera áudio usando NVIDIA NIM TTS (grátis) ou ElevenLabs (pago).
+ *
+ * Prioridade:
+ *   1. NVIDIA NIM Magpie-TTS (grátis, multilingual, incluindo pt-BR)
+ *   2. ElevenLabs (pago, melhor qualidade de clonagem de voz)
+ *   3. Modo demo (sem chave, retorna áudio fictício)
+ */
 export async function POST(req: Request) {
   try {
     const { script, voiceId: requestVoiceId, voiceSettings } = await req.json();
 
     if (!script) {
       return NextResponse.json({ error: 'Faltando o roteiro para gerar o áudio.' }, { status: 400 });
+    }
+
+    const nvidiaKey = process.env.NVIDIA_API_KEY;
+    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+
+    // ─────────────────────────────────────────────
+    // MODO 1: NVIDIA NIM TTS (Gratuito)
+    // ─────────────────────────────────────────────
+    const useNvidia = nvidiaKey &&
+      nvidiaKey !== 'cole_sua_chave_nvidia_aqui' &&
+      nvidiaKey.startsWith('nvapi-');
+
+    if (useNvidia) {
+      console.log('[TTS] Usando NVIDIA NIM Magpie-TTS — modo gratuito ✓');
+      try {
+        const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${nvidiaKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: process.env.NVIDIA_TTS_MODEL || 'nvidia/magpie-tts-multilingual',
+            input: script,
+            voice: 'Leonardo', // voz padrão multilingual
+            response_format: 'mp3',
+          }),
+        });
+
+        if (nvidiaResponse.ok) {
+          const audioBuffer = await nvidiaResponse.arrayBuffer();
+          const timestamp = Date.now();
+          const filename = `audio_nvidia_${timestamp}.mp3`;
+          const audioDir = path.join(process.cwd(), 'public', 'audio');
+
+          try {
+            await mkdir(audioDir, { recursive: true });
+            await writeFile(path.join(audioDir, filename), Buffer.from(audioBuffer));
+          } catch (fileError) {
+            console.error('Error saving audio file:', fileError);
+          }
+
+          const base64Audio = Buffer.from(audioBuffer).toString('base64');
+          return NextResponse.json({
+            audioDataUrl: `data:audio/mpeg;base64,${base64Audio}`,
+            downloadUrl: `/audio/${filename}`,
+            filename,
+            timestamp,
+            provider: 'nvidia',
+          });
+        } else {
+          const errData = await nvidiaResponse.json().catch(() => ({}));
+          console.warn('[TTS] NVIDIA TTS falhou, tentando ElevenLabs...', errData);
+        }
+      } catch (nvidiaErr) {
+        console.warn('[TTS] Erro NVIDIA NIM TTS, tentando ElevenLabs...', nvidiaErr);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // MODO 2: ElevenLabs (Pago)
+    // ─────────────────────────────────────────────
+    const isDemoMode = !elevenLabsKey || elevenLabsKey === 'cole_sua_chave_aqui';
+
+    if (isDemoMode) {
+      // Modo demo: retorna áudio fictício
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return NextResponse.json({
+        audioDataUrl: "data:audio/mpeg;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+        downloadUrl: "#",
+        filename: "demo_audio.mp3",
+        timestamp: Date.now(),
+        provider: 'demo',
+      });
     }
 
     // Use voiceId from request, or fall back to env
@@ -19,18 +101,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    const isDemoMode = !apiKey || apiKey === 'cole_sua_chave_aqui';
-
-    if (isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      return NextResponse.json({
-        audioDataUrl: "data:audio/mpeg;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
-        downloadUrl: "#",
-        filename: "demo_audio.mp3",
-        timestamp: Date.now(),
-      });
-    }
+    console.log('[TTS] Usando ElevenLabs');
 
     // Default voice settings with overrides from request
     const settings = {
@@ -44,12 +115,12 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
-        'xi-api-key': apiKey,
+        'xi-api-key': elevenLabsKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         text: script,
-        model_id: 'eleven_multilingual_v2', // Best model for Portuguese
+        model_id: 'eleven_multilingual_v2',
         voice_settings: settings,
       }),
     });
@@ -70,7 +141,6 @@ export async function POST(req: Request) {
 
     const audioBuffer = await response.arrayBuffer();
 
-    // Save audio file for download
     const timestamp = Date.now();
     const filename = `audio_${timestamp}.mp3`;
     const audioDir = path.join(process.cwd(), 'public', 'audio');
@@ -80,10 +150,8 @@ export async function POST(req: Request) {
       await writeFile(path.join(audioDir, filename), Buffer.from(audioBuffer));
     } catch (fileError) {
       console.error('Error saving audio file:', fileError);
-      // Continue even if file save fails - we still have the base64
     }
 
-    // Return both base64 (for immediate playback) and file URL (for download)
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
     const audioDataUrl = `data:audio/mpeg;base64,${base64Audio}`;
 
@@ -92,6 +160,7 @@ export async function POST(req: Request) {
       downloadUrl: `/audio/${filename}`,
       filename,
       timestamp,
+      provider: 'elevenlabs',
     });
   } catch (error) {
     console.error('Error generating audio:', error);

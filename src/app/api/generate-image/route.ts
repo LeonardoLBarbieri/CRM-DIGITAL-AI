@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
@@ -13,7 +9,64 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Prompt é obrigatório.' }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'cole_sua_chave_aqui') {
+    const nvidiaKey = process.env.NVIDIA_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+
+    // ─────────────────────────────────────────────
+    // MODO 1: NVIDIA NIM Stable Diffusion XL (Gratuito)
+    // ─────────────────────────────────────────────
+    const useNvidia = nvidiaKey && 
+      nvidiaKey !== 'cole_sua_chave_nvidia_aqui' && 
+      nvidiaKey.startsWith('nvapi-');
+
+    if (useNvidia) {
+      console.log('[Image] Usando NVIDIA NIM (Stable Diffusion XL) — modo gratuito ✓');
+      try {
+        const nvidiaResponse = await fetch('https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${nvidiaKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            text_prompts: [
+              {
+                text: prompt,
+                weight: 1
+              }
+            ],
+            cfg_scale: 5,
+            steps: 30,
+            seed: 0,
+            samples: 1
+          }),
+        });
+
+        if (nvidiaResponse.ok) {
+          const data = await nvidiaResponse.json();
+          // A API da NVIDIA retorna a imagem em base64 no array artifacts
+          if (data.artifacts && data.artifacts.length > 0) {
+            const base64Image = data.artifacts[0].base64;
+            const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+            return NextResponse.json({ 
+              url: imageUrl,
+              provider: 'nvidia' 
+            });
+          }
+        } else {
+          const errData = await nvidiaResponse.json().catch(() => ({}));
+          console.warn('[Image] NVIDIA Image API falhou, tentando OpenAI...', errData);
+        }
+      } catch (nvidiaErr) {
+        console.warn('[Image] Erro NVIDIA NIM Image API, tentando OpenAI...', nvidiaErr);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // MODO 2: OpenAI DALL-E (Pago)
+    // ─────────────────────────────────────────────
+    if (!openaiKey || openaiKey === 'cole_sua_chave_aqui') {
       // Retorna mock para a demonstração
       await new Promise(resolve => setTimeout(resolve, 2500));
       return NextResponse.json({ 
@@ -22,6 +75,9 @@ export async function POST(req: Request) {
       });
     }
 
+    console.log('[Image] Usando OpenAI (DALL-E 3)');
+    const openai = new OpenAI({ apiKey: openaiKey });
+    
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt: prompt,
@@ -32,7 +88,7 @@ export async function POST(req: Request) {
 
     const imageUrl = response.data?.[0]?.url;
 
-    return NextResponse.json({ url: imageUrl });
+    return NextResponse.json({ url: imageUrl, provider: 'openai' });
   } catch (error: any) {
     console.error('Error generating image:', error);
     

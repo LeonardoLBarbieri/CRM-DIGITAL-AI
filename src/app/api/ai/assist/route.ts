@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { getAIClient, isAIConfigured } from '@/lib/nvidia-client'
 import prisma from '@/lib/prisma'
 
 // ─────────────────────────────────────────────
@@ -101,12 +101,12 @@ Retorne apenas a legenda, pronta para publicação.`
 // POST /api/ai/assist
 // ─────────────────────────────────────────────
 export async function POST(req: Request) {
-  // Verifica se a chave está configurada
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: 'IA não configurada' }, { status: 503 })
+  // Verifica se algum provedor de IA está configurado
+  if (!isAIConfigured()) {
+    return NextResponse.json({ error: 'IA não configurada. Configure NVIDIA_API_KEY ou OPENAI_API_KEY no .env.local.' }, { status: 503 })
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const { client: openai, defaultModel } = getAIClient()
 
   try {
     const body: AssistRequestBody = await req.json()
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
     const prompt = buildPrompt(type, context, lead, messages)
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: defaultModel,
       messages: [
         {
           role: 'system',

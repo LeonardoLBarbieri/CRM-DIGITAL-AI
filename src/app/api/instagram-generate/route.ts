@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import OpenAI from 'openai'
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+import { getAIClient } from '@/lib/nvidia-client'
 
 export async function POST(req: Request) {
   try {
@@ -22,8 +20,11 @@ Sua tarefa é criar 3 ideias diferentes de COPY para postagens no Instagram.
 Escreva a copy pronta para uso, incluindo emojis e hashtags estratégicas.
 Separe as ideias por "---".`
 
+    // Seleciona automaticamente NVIDIA NIM (grátis) ou OpenAI
+    const { client: openai, defaultModel } = getAIClient()
+
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: defaultModel,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Empreendimento: ${propertyName}\nDiferenciais: ${keyTopics}\nEstilo: ${style}` }
