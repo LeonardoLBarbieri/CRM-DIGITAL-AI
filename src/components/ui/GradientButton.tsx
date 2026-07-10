@@ -17,18 +17,18 @@ interface GradientButtonProps {
 }
 
 const variants = {
-  primary: "from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-900/25",
-  accent: "from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 shadow-cyan-900/25",
-  success: "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-900/25",
-  danger: "from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-red-900/25",
-  creative: "from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-purple-900/25",
-  warm: "from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-900/25",
+  primary: "bg-primary text-primary-foreground hover:bg-white/90 border border-transparent shadow-sm",
+  accent: "bg-[#0070F3] text-white hover:bg-[#0060d1] border border-transparent shadow-sm",
+  success: "bg-success text-white hover:bg-success/90 border border-transparent shadow-sm",
+  danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 border border-transparent shadow-sm",
+  creative: "bg-[#7C3AED] text-white hover:bg-[#6D28D9] border border-transparent shadow-sm",
+  warm: "bg-warning text-black hover:bg-warning/90 border border-transparent shadow-sm",
 };
 
 const sizes = {
-  sm: "py-2.5 px-4 text-sm",
-  md: "py-3.5 px-6 text-sm",
-  lg: "py-4 px-8 text-base",
+  sm: "py-2 px-3 text-xs",
+  md: "py-2.5 px-4 text-sm",
+  lg: "py-3 px-6 text-base",
 };
 
 export function GradientButton({
@@ -45,16 +45,16 @@ export function GradientButton({
 }: GradientButtonProps) {
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      whileHover={{ scale: disabled ? 1 : 1.01 }}
+      whileTap={{ scale: disabled ? 1 : 0.99 }}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`bg-gradient-to-r ${variants[variant]} disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl ${sizes[size]} font-semibold shadow-lg transition-all flex items-center justify-center gap-2 group ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`${variants[variant]} disabled:opacity-50 disabled:cursor-not-allowed rounded-[6px] ${sizes[size]} font-medium transition-colors flex items-center justify-center gap-2 group ${fullWidth ? "w-full" : ""} ${className}`}
     >
       {loading ? (
         <>
-          <Loader2 size={18} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
           {loadingText}
         </>
       ) : (

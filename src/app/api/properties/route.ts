@@ -12,8 +12,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    // Autenticação desativada temporariamente
 
     const properties = await prisma.property.findMany({
       orderBy: { createdAt: 'desc' }
@@ -26,10 +25,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session || (session.user as any).role !== "GERENTE") {
-      return NextResponse.json({ error: 'Apenas gerentes podem cadastrar.' }, { status: 401 })
-    }
+    // Autenticação desativada temporariamente conforme solicitado pelo usuário
 
     const formData = await req.formData()
     const file = formData.get('file') as File
@@ -39,18 +35,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Arquivo e nome são obrigatórios.' }, { status: 400 })
     }
 
-    // 1. Salvar o arquivo localmente
+    // 1. Salvar o arquivo
     const buffer = Buffer.from(await file.arrayBuffer())
     const filename = Date.now() + '-' + file.name.replaceAll(' ', '_')
-    // Na vida real usaríamos S3, mas aqui usamos a pasta public para MVP
-    const uploadDir = path.join(process.cwd(), 'public/uploads')
-    
-    // Garante que o diretorio existe
-    await require('fs').promises.mkdir(uploadDir, { recursive: true }).catch(console.error)
-    
-    const filepath = path.join(uploadDir, filename)
-    await writeFile(filepath, buffer)
-    const publicUrl = `/uploads/${filename}`
+    let publicUrl = '';
+
+    // Upload to Supabase if configured, else fallback to local
+    if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('dummy')) {
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase.storage.from('property-images').upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false
+      });
+      if (error) console.error('Supabase upload erro:', error);
+      const { data: urlData } = supabase.storage.from('property-images').getPublicUrl(filename);
+      publicUrl = urlData.publicUrl;
+    } else {
+      const uploadDir = path.join(process.cwd(), 'public/uploads')
+      await require('fs').promises.mkdir(uploadDir, { recursive: true }).catch(console.error)
+      const filepath = path.join(uploadDir, filename)
+      await writeFile(filepath, buffer)
+      publicUrl = `/api/uploads/${filename}`
+    }
 
     // 2. Extrair texto (somente para PDFs neste MVP)
     let extractedText = ""

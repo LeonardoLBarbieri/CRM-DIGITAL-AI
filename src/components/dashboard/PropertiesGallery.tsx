@@ -109,7 +109,7 @@ export function PropertiesGallery() {
               <label className="text-sm font-medium">Arquivo PDF do Material</label>
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf, image/jpeg, image/png, image/webp"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="input-field file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20"
               />
@@ -138,15 +138,21 @@ export function PropertiesGallery() {
             
             return (
               <div key={prop.id} className="glass-panel rounded-2xl p-6 flex flex-col hover:shadow-xl transition-shadow group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400">
-                    <FileText size={20} />
-                  </div>
+                <div className="mb-4 relative">
+                  {prop.filePath?.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                    <div className="w-full h-40 rounded-xl overflow-hidden bg-secondary relative group-hover:shadow-md transition-all">
+                      <img src={prop.filePath} alt={prop.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400">
+                      <FileText size={20} />
+                    </div>
+                  )}
                   <a
                     href={prop.filePath}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 bg-white/5 hover:bg-blue-500 hover:text-white rounded-lg transition-colors text-muted-foreground flex items-center gap-2 text-sm font-medium"
+                    className="absolute top-2 right-2 p-2 bg-black/40 backdrop-blur-sm hover:bg-blue-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100"
                   >
                     <Download size={16} /> Baixar
                   </a>

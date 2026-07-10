@@ -151,7 +151,29 @@ export async function executeCampaign(campaignId: string): Promise<void> {
         throw new Error('Lead sem número de telefone/WhatsApp')
       }
 
-      await sendWhatsAppMessage(phone, message)
+      // Check if the message is a template (e.g. "TEMPLATE:boas_vindas")
+      if (campaign.message.startsWith('TEMPLATE:')) {
+        const templateName = campaign.message.split(':')[1].trim();
+        const { whatsAppService } = await import('@/services/whatsapp');
+        
+        // Prepare template variables. Meta API uses positional {{1}}, {{2}}...
+        // For simplicity, we just pass the lead name as the first parameter if needed,
+        // or no parameters if the template doesn't require them.
+        // A full implementation would map variables precisely to the template definition.
+        const components = [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: lead.name || "Cliente" }
+            ]
+          }
+        ];
+        
+        await whatsAppService.sendTemplate(lead.id, templateName, 'pt_BR', components);
+      } else {
+        // Send regular text message
+        await sendWhatsAppMessage(phone, message)
+      }
 
       // Atualizar recipient para 'sent'
       await prisma.campaignRecipient.update({

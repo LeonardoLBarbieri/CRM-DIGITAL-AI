@@ -5,12 +5,15 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, LineChart, Line, Cell, LabelList
 } from "recharts";
-import { Users, Calendar, DollarSign, TrendingUp, CheckCircle, Target, ArrowUpRight, X, Loader2, Sparkles } from "lucide-react";
+import { Users, Calendar, DollarSign, TrendingUp, CheckCircle, Target, ArrowUpRight, X, Loader2, Sparkles, MessageSquare, Settings, BarChart3 } from "lucide-react";
 import { TeamManager } from "./TeamManager";
 import { AICampaignCreator } from "../campaigns/AICampaignCreator";
+import WhatsAppSimulator from "../crm/WhatsAppSimulator";
+import WhatsAppSettings from "./WhatsAppSettings";
 import type { DashboardMetrics, LeadStatus } from "@/lib/types";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
-// Cores por status do funil
+// Solid flat colors for funnel statuses in Vercel/Linear style
 const STATUS_COLORS: Partial<Record<LeadStatus, string>> = {
   "Lead Novo":           "#3b82f6",
   "Primeiro Contato":    "#6366f1",
@@ -33,6 +36,8 @@ export function ManagerDashboard() {
   const [period, setPeriod] = useState<"month" | "3months" | "year">("month");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [showAICreator, setShowAICreator] = useState(false);
+  const [showWhatsAppSimulator, setShowWhatsAppSimulator] = useState(false);
+  const [showWhatsAppSettings, setShowWhatsAppSettings] = useState(false);
 
   const toggleFilter = (filterName: string) => {
     setActiveFilter(activeFilter === filterName ? null : filterName);
@@ -61,10 +66,7 @@ export function ManagerDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-transparent border-b-accent/40 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-        </div>
+        <div className="w-10 h-10 rounded-full border-2 border-border border-t-foreground animate-spin" />
       </div>
     );
   }
@@ -72,10 +74,10 @@ export function ManagerDashboard() {
   if (error || !metrics) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <p className="text-red-400 text-lg font-medium">{error || "Erro desconhecido"}</p>
+        <p className="text-destructive text-sm font-medium">{error || "Erro desconhecido"}</p>
         <button
           onClick={fetchMetrics}
-          className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-xl text-sm font-medium transition-colors"
+          className="btn-primary py-2 px-4"
         >
           Tentar Novamente
         </button>
@@ -83,7 +85,6 @@ export function ManagerDashboard() {
     );
   }
 
-  // Preparar dados do funil para o gráfico de barras
   const funnelData = Object.entries(metrics.funnelDistribution)
     .filter(([, count]) => (count ?? 0) > 0)
     .map(([status, count]) => ({
@@ -93,7 +94,6 @@ export function ManagerDashboard() {
     }))
     .sort((a, b) => b.value - a.value);
 
-  // Preparar dados de tendência diária (últimos 14 dias com dados)
   const trendData = metrics.dailyNewLeads
     .slice(-14)
     .map((d) => ({
@@ -101,55 +101,70 @@ export function ManagerDashboard() {
       leads: d.count,
     }));
 
-  // Calcular conversão de forma legível
   const conversionDisplay = metrics.conversionRate > 0
     ? `${metrics.conversionRate.toFixed(1)}%`
     : "0%";
 
   return (
-    <div className="space-y-8 animate-in fade-in relative overflow-hidden pb-12">
-      {/* Header com filtro de período */}
-      <header className="mb-8 relative z-10 flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Gerencial</h1>
-          <p className="text-muted-foreground mt-2">Visão geral do funil de vendas, conversão e receitas.</p>
-        </div>
-        <div className="flex gap-4 items-center flex-wrap">
-          <button
-            onClick={() => setShowAICreator(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-purple-500/25"
-          >
-            <Sparkles size={16} />
-            Criar Campanha com IA
-          </button>
-          
-          <div className="flex gap-2">
-          {(["month", "3months", "year"] as const).map((p) => (
+    <div className="space-y-6 animate-in fade-in duration-200 pb-12">
+      <SectionHeader
+        icon={<BarChart3 size={20} />}
+        title="Dashboard Gerencial"
+        subtitle="Visão geral do funil de vendas, conversão e receitas."
+        color="blue"
+        actions={
+          <div className="flex gap-2 items-center flex-wrap">
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                period === p
-                  ? "bg-primary/20 border-primary/40 text-primary"
-                  : "border-border/50 hover:bg-white/5 text-muted-foreground"
-              }`}
+              onClick={() => setShowAICreator(true)}
+              className="btn-primary flex items-center gap-1.5 py-1.5 px-3 text-xs"
             >
-              {p === "month" ? "30 dias" : p === "3months" ? "3 meses" : "Este ano"}
+              <Sparkles size={14} />
+              Criar Campanha IA
             </button>
-          ))}
+
+            <button
+              onClick={() => setShowWhatsAppSimulator(true)}
+              className="btn-secondary flex items-center gap-1.5 py-1.5 px-3 text-xs"
+            >
+              <MessageSquare size={14} />
+              Simular WhatsApp
+            </button>
+
+            <button
+              onClick={() => setShowWhatsAppSettings(true)}
+              className="btn-ghost flex items-center gap-1.5 py-1.5 px-3 text-xs border border-border bg-card"
+            >
+              <Settings size={14} />
+              Config WhatsApp
+            </button>
+            
+            <div className="flex gap-1 border border-border rounded-lg p-0.5 bg-secondary ml-1">
+              {(["month", "3months", "year"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-colors ${
+                    period === p
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p === "month" ? "30d" : p === "3months" ? "3m" : "Ano"}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Top Stats Cards */}
-      <div className="perspective-container grid grid-cols-2 md:grid-cols-4 gap-5 relative z-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="Total de Leads"
           value={metrics.totalLeads}
-          icon={<Users size={20} />}
+          icon={<Users size={16} />}
           trend={`+${metrics.leadsToday} hoje`}
           color="blue"
-          delay={0}
           isActive={activeFilter === "Total de Leads"}
           hasActiveFilter={!!activeFilter}
           onClick={() => toggleFilter("Total de Leads")}
@@ -157,10 +172,9 @@ export function ManagerDashboard() {
         <StatCard
           title="Visitas Agendadas"
           value={metrics.pendingVisits}
-          icon={<Calendar size={20} />}
+          icon={<Calendar size={16} />}
           trend="Em aberto"
           color="purple"
-          delay={1}
           isActive={activeFilter === "Visitas Agendadas"}
           hasActiveFilter={!!activeFilter}
           onClick={() => toggleFilter("Visitas Agendadas")}
@@ -168,10 +182,9 @@ export function ManagerDashboard() {
         <StatCard
           title="Vendas Concluídas"
           value={metrics.closedThisMonth}
-          icon={<CheckCircle size={20} />}
+          icon={<CheckCircle size={16} />}
           trend="No período"
           color="emerald"
-          delay={2}
           isActive={activeFilter === "Vendas Concluídas"}
           hasActiveFilter={!!activeFilter}
           onClick={() => toggleFilter("Vendas Concluídas")}
@@ -179,96 +192,87 @@ export function ManagerDashboard() {
         <StatCard
           title="Taxa de Conversão"
           value={conversionDisplay}
-          icon={<Target size={20} />}
+          icon={<Target size={16} />}
           trend={`${metrics.openProposals} propostas abertas`}
           color="orange"
-          delay={3}
           isActive={activeFilter === "Taxa de Conversão"}
           hasActiveFilter={!!activeFilter}
           onClick={() => toggleFilter("Taxa de Conversão")}
         />
       </div>
 
-      <div className="perspective-container grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-
-        {/* Receitas — dados reais */}
-        <div className="glass-card-3d p-6 lg:col-span-1 flex flex-col justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Receitas */}
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-5 flex flex-col justify-between">
           <div>
-            <h3 className="font-semibold text-lg flex items-center gap-2.5 mb-6">
-              <div className="p-2 rounded-xl bg-green-500/10 border border-green-500/15">
-                <DollarSign size={18} className="text-green-400" />
+            <h3 className="font-semibold text-sm flex items-center gap-2 mb-5 text-emerald-700">
+              <div className="p-1.5 rounded-lg bg-emerald-500 text-white">
+                <DollarSign size={14} />
               </div>
-              Receitas
+              Finanças do Funil
             </h3>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1.5">Receita Realizada (Vendas)</p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">
+                <p className="text-[10px] text-emerald-600/70 uppercase tracking-wider font-semibold">Receita Realizada (Vendas)</p>
+                <p className="text-2xl font-bold text-emerald-800 tracking-tight mt-0.5">
                   {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(metrics.realizedRevenue)}
                 </p>
               </div>
 
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+              <div className="h-px w-full bg-emerald-200" />
 
               <div>
-                <p className="text-sm text-muted-foreground mb-1.5">Receita Estimada (Pipeline)</p>
-                <p className="text-2xl font-bold text-muted-foreground tracking-tight">
+                <p className="text-[10px] text-emerald-600/70 uppercase tracking-wider font-semibold">Receita Estimada (Pipeline)</p>
+                <p className="text-xl font-bold text-emerald-600 tracking-tight mt-0.5">
                   {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(metrics.estimatedRevenue)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Baseado em priceMax dos leads em pipeline</p>
+                <p className="text-[10px] text-emerald-500 mt-1">Estimado baseado no valor máximo configurado</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 stat-card-spatial p-4 flex items-center justify-between !bg-green-500/[0.06] !border-green-500/15">
-            <span className="text-sm font-medium text-green-400">
+          <div className="mt-6 bg-white/60 border border-emerald-200 p-3 rounded-xl flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-700">
               {metrics.leadsThisWeek} leads esta semana
             </span>
-            <ArrowUpRight size={20} className="text-green-400" />
+            <ArrowUpRight size={14} className="text-emerald-500" />
           </div>
         </div>
 
-        {/* Evolução de Leads — dados reais */}
-        <div className="chart-panel-glass p-6 lg:col-span-2">
-          <h3 className="font-semibold text-lg mb-6 relative z-10">
-            Novos Leads — Últimos 14 dias
+        {/* Evolução de Leads */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 lg:col-span-2">
+          <h3 className="font-semibold text-sm mb-5 text-blue-700">
+            📈 Novos Leads — Últimos 14 dias
           </h3>
           {trendData.every((d) => d.leads === 0) ? (
-            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-xs">
               Nenhum lead cadastrado no período selecionado.
             </div>
           ) : (
-            <div className="h-64 w-full relative z-10">
+            <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
-                  <defs>
-                    <linearGradient id="lineGlow" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#7C3AED" />
-                      <stop offset="100%" stopColor="#0891B2" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#8888AA", fontSize: 11 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#8888AA", fontSize: 11 }} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#666", fontSize: 10 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#666", fontSize: 10 }} allowDecimals={false} />
                   <RechartsTooltip
                     contentStyle={{
-                      borderRadius: "16px",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
-                      background: "rgba(12, 12, 30, 0.9)",
-                      backdropFilter: "blur(20px)",
-                      color: "#F0F0F8",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                      background: "var(--popover)",
+                      fontSize: "11px",
+                      color: "var(--foreground)",
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="leads"
                     name="Leads"
-                    stroke="url(#lineGlow)"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#7C3AED", stroke: "#7C3AED", strokeWidth: 2 }}
-                    activeDot={{ r: 7, fill: "#7C3AED", stroke: "rgba(124,58,237,0.3)", strokeWidth: 4 }}
+                    stroke="var(--primary)"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "var(--background)", stroke: "var(--primary)", strokeWidth: 1.5 }}
+                    activeDot={{ r: 5, fill: "var(--primary)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -276,75 +280,64 @@ export function ManagerDashboard() {
           )}
         </div>
 
-        {/* Distribuição por status — dados reais */}
-        <div className="chart-panel-glass p-6 lg:col-span-3">
-          <div className="flex items-center justify-between mb-6 relative z-10">
-            <h3 className="font-semibold text-lg">Distribuição de Leads por Status</h3>
+        {/* Distribuição por status */}
+        <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 rounded-2xl p-5 lg:col-span-3">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-semibold text-sm text-purple-700">🎯 Distribuição de Leads por Status</h3>
             {activeFilter && (
-              <div className="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium animate-in fade-in flex items-center gap-2">
+              <div className="px-2 py-0.5 rounded-full bg-secondary border border-border text-foreground text-[10px] font-medium flex items-center gap-1.5">
                 Filtrando: {activeFilter}
-                <button onClick={() => setActiveFilter(null)} className="hover:text-white transition-colors">
-                  <X size={12} />
+                <button onClick={() => setActiveFilter(null)} className="hover:text-foreground">
+                  <X size={10} />
                 </button>
               </div>
             )}
           </div>
 
           {funnelData.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-xs">
               Nenhum lead cadastrado ainda. Adicione leads no CRM para ver o funil.
             </div>
           ) : (
-            <div className="h-64 w-full relative z-10">
+            <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={funnelData} layout="vertical" margin={{ top: 10, right: 60, left: 10, bottom: 10 }} barSize={14}>
-                  <defs>
-                    {funnelData.map((entry, index) => (
-                      <linearGradient key={`grad-${index}`} id={`bar-${index}`} x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor={entry.color} stopOpacity={0.7} />
-                        <stop offset="100%" stopColor={entry.color} stopOpacity={1} />
-                      </linearGradient>
-                    ))}
-                  </defs>
-                  <XAxis type="number" hide domain={[0, "dataMax + 2"]} />
+                <BarChart data={funnelData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }} barSize={12}>
+                  <XAxis type="number" hide domain={[0, "dataMax + 1"]} />
                   <YAxis
                     dataKey="name"
                     type="category"
                     axisLine={false}
                     tickLine={false}
-                    width={140}
-                    tick={{ fill: "#8888AA", fontSize: 12, fontWeight: 500 }}
+                    width={130}
+                    tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 500 }}
                   />
                   <RechartsTooltip
-                    cursor={{ fill: "rgba(255, 255, 255, 0.04)" }}
+                    cursor={{ fill: "rgba(255, 255, 255, 0.02)" }}
                     contentStyle={{
-                      borderRadius: "16px",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
-                      background: "rgba(12, 12, 30, 0.9)",
-                      backdropFilter: "blur(20px)",
-                      color: "#F0F0F8",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                      background: "var(--popover)",
+                      fontSize: "11px",
+                      color: "var(--foreground)",
                     }}
-                    labelStyle={{ color: "#FFFFFF", fontWeight: "bold", paddingBottom: "4px" }}
-                    itemStyle={{ color: "#E0E0F0", fontSize: "14px" }}
                   />
                   <Bar
                     dataKey="value"
                     name="Leads"
-                    radius={[8, 8, 8, 8]}
-                    background={{ fill: "rgba(255, 255, 255, 0.03)", radius: 8 }}
+                    radius={[4, 4, 4, 4]}
+                    background={{ fill: "rgba(255, 255, 255, 0.02)", radius: 4 }}
                     onClick={(data: any) => toggleFilter(data.name)}
                     cursor="pointer"
                   >
                     {funnelData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={`url(#bar-${index})`}
+                        fill={entry.color}
                         opacity={activeFilter && activeFilter !== entry.name ? 0.3 : 1}
-                        style={{ transition: "opacity 0.3s ease" }}
+                        style={{ transition: "opacity 0.2s ease" }}
                       />
                     ))}
-                    <LabelList dataKey="value" position="right" fill="#F0F0F8" fontSize={13} fontWeight={600} offset={10} />
+                    <LabelList dataKey="value" position="right" fill="var(--foreground)" fontSize={11} fontWeight={600} offset={8} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -357,43 +350,52 @@ export function ManagerDashboard() {
 
       {/* AI Campaign Creator Modal */}
       {showAICreator && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <AICampaignCreator onClose={() => setShowAICreator(false)} />
+        </div>
+      )}
+
+      {/* WhatsApp Webhook Simulator Modal */}
+      {showWhatsAppSimulator && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <WhatsAppSimulator onClose={() => setShowWhatsAppSimulator(false)} />
+        </div>
+      )}
+
+      {/* WhatsApp Settings Modal */}
+      {showWhatsAppSettings && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <WhatsAppSettings onClose={() => setShowWhatsAppSettings(false)} />
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({ title, value, icon, trend, color, delay, isActive, hasActiveFilter, onClick }: any) {
-  const colorMap: Record<string, { icon: string; glow: string; border: string }> = {
-    blue:    { icon: "text-blue-400 bg-blue-500/10 border-blue-500/15",    glow: "shadow-blue-500/5",    border: "rgba(59, 130, 246, 0.5)" },
-    purple:  { icon: "text-purple-400 bg-purple-500/10 border-purple-500/15", glow: "shadow-purple-500/5", border: "rgba(168, 85, 247, 0.5)" },
-    emerald: { icon: "text-emerald-400 bg-emerald-500/10 border-emerald-500/15", glow: "shadow-emerald-500/5", border: "rgba(16, 185, 129, 0.5)" },
-    orange:  { icon: "text-orange-400 bg-orange-500/10 border-orange-500/15", glow: "shadow-orange-500/5", border: "rgba(249, 115, 22, 0.5)" },
+function StatCard({ title, value, icon, trend, color, isActive, hasActiveFilter, onClick }: any) {
+  const colorMap: Record<string, { bg: string; iconBg: string; trendColor: string }> = {
+    blue:    { bg: "bg-gradient-to-br from-blue-500 to-blue-600", iconBg: "bg-white/20", trendColor: "text-blue-100" },
+    purple:  { bg: "bg-gradient-to-br from-purple-500 to-purple-600", iconBg: "bg-white/20", trendColor: "text-purple-100" },
+    emerald: { bg: "bg-gradient-to-br from-emerald-500 to-emerald-600", iconBg: "bg-white/20", trendColor: "text-emerald-100" },
+    orange:  { bg: "bg-gradient-to-br from-orange-400 to-orange-500", iconBg: "bg-white/20", trendColor: "text-orange-100" },
   };
   const c = colorMap[color] || colorMap.blue;
 
   return (
     <div
       onClick={onClick}
-      className={`stat-card-spatial p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 ${c.glow}`}
-      style={{
-        animationDelay: `${delay * 100}ms`,
-        opacity: hasActiveFilter && !isActive ? 0.3 : 1,
-        borderColor: isActive ? c.border : "",
-        boxShadow: isActive ? `0 0 0 1px ${c.border} inset, 0 16px 48px rgba(0,0,0,0.4)` : "",
-        transform: isActive ? "translateY(-4px) scale(1.02)" : "",
-      }}
+      className={`${c.bg} text-white p-5 rounded-2xl flex flex-col justify-between cursor-pointer transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${
+        hasActiveFilter && !isActive ? "opacity-40 scale-95" : "opacity-100"
+      } ${isActive ? "ring-2 ring-white/50 scale-[1.02]" : ""}`}
     >
       <div className="flex justify-between items-start mb-4">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className={`p-2 rounded-xl border ${c.icon}`}>{icon}</div>
+        <p className="text-xs font-semibold text-white/80 uppercase tracking-wide">{title}</p>
+        <div className={`p-2 rounded-xl ${c.iconBg}`}>{icon}</div>
       </div>
       <div>
-        <h3 className="text-2xl font-bold tracking-tight">{value}</h3>
-        <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-          <TrendingUp size={12} className={color === "orange" ? "text-orange-400" : "text-green-400"} />
+        <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+        <p className={`text-[11px] ${c.trendColor} mt-1.5 flex items-center gap-1 font-medium`}>
+          <TrendingUp size={11} />
           {trend}
         </p>
       </div>

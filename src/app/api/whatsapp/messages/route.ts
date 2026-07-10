@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { whatsAppService } from '@/services/whatsapp';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,11 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const messages = await prisma.whatsAppMessage.findMany({
-      where: { leadId },
-      orderBy: { timestamp: 'asc' },
-    });
-
+    const messages = await whatsAppService.getMessages(leadId);
     return NextResponse.json(messages);
   } catch (error) {
     console.error('Error fetching messages:', error);

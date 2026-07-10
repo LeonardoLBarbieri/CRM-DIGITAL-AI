@@ -1,195 +1,263 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 import {
-  sendWhatsAppMessage,
-  getConfig,
+  getWhatsAppConfig,
   getBusinessHoursConfig,
   isWithinBusinessHours,
-} from '@/lib/whatsapp'
-import { renderTemplate } from '@/lib/utils'
-import type { WebhookEntry } from '@/lib/types'
+  sendWhatsAppMessage,
+  markMessageAsRead,
+  getConfig,
+} from '@/lib/whatsapp';
+import { renderTemplate } from '@/lib/utils';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET — verificação do webhook Meta
-// ─────────────────────────────────────────────────────────────────────────────
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const mode = searchParams.get('hub.mode')
-  const token = searchParams.get('hub.verify_token')
-  const challenge = searchParams.get('hub.challenge')
-
-  const record = await prisma.systemConfig.findUnique({
-    where: { key: 'whatsapp.verifyToken' },
-  })
-  const verifyToken = record?.value
-
-  if (mode === 'subscribe' && verifyToken && token === verifyToken) {
-    return new NextResponse(challenge, { status: 200 })
-  }
-
-  return new NextResponse('Forbidden', { status: 403 })
+// Helper to clean phone numbers for matching
+function formatPhone(phone: string) {
+  return phone.replace(/\D/g, '');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST — receber eventos do WhatsApp
-// ─────────────────────────────────────────────────────────────────────────────
-export async function POST(request: NextRequest) {
-  let body: { object?: string; entry?: WebhookEntry[] }
+// ----------------------------------------------------------------------------
+// GET: Webhook Verification for Meta
+// ----------------------------------------------------------------------------
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const mode = url.searchParams.get('hub.mode');
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge');
 
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  if (mode && token) {
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      console.log('WEBHOOK_VERIFIED');
+      return new NextResponse(challenge, { status: 200 });
+    } else {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+  }
+  return new NextResponse('Bad Request', { status: 400 });
+}
+
+// ----------------------------------------------------------------------------
+// POST: Receive Webhook Events (Messages, Status updates)
+// ----------------------------------------------------------------------------
+export async function POST(req: Request) {
   try {
-    body = (await request.json()) as { object?: string; entry?: WebhookEntry[] }
-  } catch {
-    // Body inválido — retornar 200 para evitar retry da Meta
-    return NextResponse.json({ ok: true }, { status: 200 })
-  }
+    const body = await req.json();
 
-  // Sem entry → retornar 200 imediatamente
-  if (!body.entry || body.entry.length === 0) {
-    return NextResponse.json({ ok: true }, { status: 200 })
-  }
+    if (body.object) {
+      if (body.entry?.[0]?.changes?.[0]?.value?.messages) {
 
-  for (const entry of body.entry) {
-    for (const change of entry.changes) {
-      const value = change.value
+        // ── Mensagem recebida de um usuário ──────────────────────────────
+        const message = body.entry[0].changes[0].value.messages[0];
+        const contact = body.entry[0].changes[0].value.contacts[0];
 
-      // ── Processar mensagens recebidas ──────────────────────────────────────
-      if (value.messages && value.messages.length > 0) {
-        for (const message of value.messages) {
-          if (message.type !== 'text' || !message.text?.body) continue
+        const fromPhone = message.from; // ex: "5511999999999"
+        const msgBody = message.text?.body;
+        const messageId = message.id;
 
-          const from = message.from
-          const messageBody = message.text.body
+        if (msgBody) {
+          console.log(`[WEBHOOK] Mensagem recebida de ${fromPhone}: ${msgBody}`);
 
-          // Buscar nome do contato na notificação
-          const contact = value.contacts?.find((c) => c.wa_id === from)
-          const contactName = contact?.profile.name ?? null
+          // 1. Marcar mensagem como lida na Meta (blue ticks)
+          markMessageAsRead(messageId).catch(() => {});
 
-          // Buscar lead existente
+          // 2. Encontrar ou criar lead
           let lead = await prisma.lead.findFirst({
-            where: { OR: [{ phone: from }, { whatsapp: from }] },
-          })
+            where: {
+              OR: [
+                { phone: { contains: fromPhone } },
+                { phone: { contains: fromPhone.substring(2) } },
+                { whatsapp: { contains: fromPhone } },
+              ]
+            }
+          });
+
+          const isNewLead = !lead;
 
           if (!lead) {
-            // Criar novo lead
             lead = await prisma.lead.create({
               data: {
-                name: contactName || from,
-                phone: from,
-                whatsapp: from,
+                name: contact?.profile?.name || 'Novo Lead (WhatsApp)',
+                phone: fromPhone,
+                whatsapp: fromPhone,
                 status: 'Lead Novo',
-                temperature: 'Frio',
-              },
-            })
-
-            // Criar tarefa automática de retorno se automação habilitada
-            const enableAutoTask = await getConfig('automation.enableAutoTask')
-            if (enableAutoTask === 'true') {
-              await prisma.task.create({
-                data: {
-                  leadId: lead.id,
-                  type: 'ligar',
-                  dueAt: new Date(Date.now() + 30 * 60 * 1000),
-                },
-              })
-            }
-
-            // Verificar horário comercial e enviar mensagem automática
-            const now = new Date()
-            const businessHoursConfig = await getBusinessHoursConfig()
-            const withinHours = isWithinBusinessHours(now, businessHoursConfig)
-
-            const brokerName = await getConfig('whatsapp.brokerName')
-            const templateVars = {
-              nome: contactName || from,
-              corretor: brokerName ?? '',
-            }
-
-            if (withinHours) {
-              const enableWelcome = await getConfig('automation.enableWelcome')
-              if (enableWelcome === 'true') {
-                const welcomeTemplate = await getConfig('automation.welcomeMessage')
-                if (welcomeTemplate) {
-                  const welcomeText = renderTemplate(welcomeTemplate, templateVars)
-                  try {
-                    const { messageId } = await sendWhatsAppMessage(from, welcomeText)
-                    await prisma.whatsAppMessage.create({
-                      data: {
-                        leadId: lead.id,
-                        body: welcomeText,
-                        sender: 'system',
-                        status: 'enviada',
-                        whatsappMessageId: messageId,
-                        isAutomated: true,
-                      },
-                    })
-                  } catch {
-                    // Erro ao enviar boas-vindas — continuar sem interromper o fluxo
-                  }
-                }
+                temperature: 'Morno',
               }
-            } else {
-              const enableOutOfHours = await getConfig('automation.enableOutOfHours')
-              if (enableOutOfHours === 'true') {
-                const outOfHoursTemplate = await getConfig('automation.outOfHoursMessage')
-                if (outOfHoursTemplate) {
-                  const outOfHoursText = renderTemplate(outOfHoursTemplate, templateVars)
-                  try {
-                    const { messageId } = await sendWhatsAppMessage(from, outOfHoursText)
-                    await prisma.whatsAppMessage.create({
-                      data: {
-                        leadId: lead.id,
-                        body: outOfHoursText,
-                        sender: 'system',
-                        status: 'enviada',
-                        whatsappMessageId: messageId,
-                        isAutomated: true,
-                      },
-                    })
-                  } catch {
-                    // Erro ao enviar mensagem de ausência — continuar sem interromper o fluxo
-                  }
-                }
-              }
-            }
+            });
+            console.log('[WEBHOOK] Novo lead criado via WhatsApp:', lead.id);
           }
 
-          // Registrar mensagem recebida do lead
+          // 3. Salvar a mensagem recebida no banco
           await prisma.whatsAppMessage.create({
             data: {
               leadId: lead.id,
-              body: messageBody,
+              body: msgBody,
               sender: 'lead',
-              status: 'entregue',
-              whatsappMessageId: message.id,
-            },
-          })
+              whatsappMessageId: messageId,
+              status: 'recebida',
+            }
+          });
+
+          // ── AUTOMAÇÕES ─────────────────────────────────────────────────
+          await processAutomations(lead, fromPhone, isNewLead, msgBody);
         }
       }
 
-      // ── Processar eventos de status (delivered / read) ─────────────────────
-      if (value.statuses && value.statuses.length > 0) {
-        for (const statusEvent of value.statuses) {
-          if (statusEvent.status !== 'delivered' && statusEvent.status !== 'read') {
-            continue
-          }
+      // Handle Message Status Updates (delivered, read)
+      else if (body.entry?.[0]?.changes?.[0]?.value?.statuses) {
+        const statusObj = body.entry[0].changes[0].value.statuses[0];
+        const messageId = statusObj.id;
+        const status = statusObj.status; // sent, delivered, read, failed
 
-          const newStatus = statusEvent.status === 'delivered' ? 'entregue' : 'lida'
-
-          const existingMessage = await prisma.whatsAppMessage.findFirst({
-            where: { whatsappMessageId: statusEvent.id },
-          })
-
-          if (existingMessage) {
-            await prisma.whatsAppMessage.update({
-              where: { id: existingMessage.id },
-              data: { status: newStatus },
-            })
-          }
+        if (status === 'delivered' || status === 'read') {
+          await prisma.whatsAppMessage.updateMany({
+            where: { whatsappMessageId: messageId },
+            data: { status: status === 'read' ? 'lida' : 'entregue' },
+          });
         }
+
+        if (status === 'failed') {
+          const errorCode = statusObj.errors?.[0]?.code;
+          const errorTitle = statusObj.errors?.[0]?.title;
+          console.error(`[WEBHOOK] Mensagem ${messageId} falhou: ${errorCode} - ${errorTitle}`);
+          await prisma.whatsAppMessage.updateMany({
+            where: { whatsappMessageId: messageId },
+            data: { status: 'falha' },
+          });
+        }
+      }
+
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
+    return NextResponse.json({ error: 'Invalid object' }, { status: 404 });
+  } catch (error) {
+    console.error('[WEBHOOK] Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Automações: boas-vindas, ausência, tarefa automática
+// ─────────────────────────────────────────────────────────────────────────────
+async function processAutomations(
+  lead: any,
+  fromPhone: string,
+  isNewLead: boolean,
+  messageBody: string,
+) {
+  try {
+    const config = await getWhatsAppConfig();
+    if (!config.configured) {
+      console.log('[AUTOMATIONS] WhatsApp não configurado — pulando automações');
+      return;
+    }
+
+    // Carregar flags de automação do banco
+    const [
+      enableWelcomeStr,
+      welcomeMessageTemplate,
+      enableOutOfHoursStr,
+      outOfHoursMessageTemplate,
+      enableAutoTaskStr,
+      brokerName,
+    ] = await Promise.all([
+      getConfig('automation.enableWelcome'),
+      getConfig('automation.welcomeMessage'),
+      getConfig('automation.enableOutOfHours'),
+      getConfig('automation.outOfHoursMessage'),
+      getConfig('automation.enableAutoTask'),
+      getConfig('whatsapp.brokerName'),
+    ]);
+
+    const enableWelcome = enableWelcomeStr === 'true';
+    const enableOutOfHours = enableOutOfHoursStr === 'true';
+    const enableAutoTask = enableAutoTaskStr !== 'false'; // default true
+
+    // Verificar horário comercial
+    const businessHours = await getBusinessHoursConfig();
+    const now = new Date();
+    const withinHours = isWithinBusinessHours(now, businessHours);
+
+    // ── 1. Mensagem de ausência (fora do horário) ──────────────────────
+    if (!withinHours && enableOutOfHours) {
+      const template = outOfHoursMessageTemplate ||
+        'Olá {nome}! No momento estamos fora do horário de atendimento. Retornaremos seu contato assim que possível! 🏠';
+
+      const rendered = renderTemplate(template, {
+        nome: lead.name,
+        corretor: brokerName || 'Corretor',
+      });
+
+      try {
+        await sendWhatsAppMessage(fromPhone, rendered);
+
+        // Salvar no banco
+        await prisma.whatsAppMessage.create({
+          data: {
+            leadId: lead.id,
+            body: rendered,
+            sender: 'system',
+            status: 'enviada',
+            whatsappMessageId: 'auto_absence_' + Date.now(),
+          },
+        });
+
+        console.log('[AUTOMATIONS] Mensagem de ausência enviada para', fromPhone);
+      } catch (err) {
+        console.error('[AUTOMATIONS] Erro ao enviar mensagem de ausência:', err);
+      }
+      // Não envia boas-vindas se está fora do horário
+    }
+
+    // ── 2. Mensagem de boas-vindas (dentro do horário, lead novo) ─────
+    else if (withinHours && isNewLead && enableWelcome) {
+      const template = welcomeMessageTemplate ||
+        'Olá {nome}! 👋 Sou o {corretor} da LB Digital. Vi que você tem interesse em nossos empreendimentos! Como posso ajudá-lo?';
+
+      const rendered = renderTemplate(template, {
+        nome: lead.name,
+        corretor: brokerName || 'Corretor',
+      });
+
+      try {
+        await sendWhatsAppMessage(fromPhone, rendered);
+
+        await prisma.whatsAppMessage.create({
+          data: {
+            leadId: lead.id,
+            body: rendered,
+            sender: 'system',
+            status: 'enviada',
+            whatsappMessageId: 'auto_welcome_' + Date.now(),
+          },
+        });
+
+        console.log('[AUTOMATIONS] Mensagem de boas-vindas enviada para', fromPhone);
+      } catch (err) {
+        console.error('[AUTOMATIONS] Erro ao enviar boas-vindas:', err);
       }
     }
-  }
 
-  // Sempre retornar 200 para evitar retry da Meta
-  return NextResponse.json({ ok: true }, { status: 200 })
+    // ── 3. Criar tarefa automática ────────────────────────────────────
+    if (isNewLead && enableAutoTask) {
+      const dueAt = new Date();
+      dueAt.setHours(dueAt.getHours() + 2); // 2 horas para retornar
+
+      await prisma.task.create({
+        data: {
+          leadId: lead.id,
+          type: 'Retorno (WhatsApp)',
+          description: `Lead "${lead.name}" (${fromPhone}) enviou mensagem: "${messageBody.substring(0, 100)}"`,
+          dueAt,
+          status: 'pendente',
+        },
+      });
+
+      console.log('[AUTOMATIONS] Tarefa de retorno criada para', lead.name);
+    }
+  } catch (err) {
+    console.error('[AUTOMATIONS] Erro geral nas automações:', err);
+    // Não propagar erro — automações não devem impedir o webhook de responder 200
+  }
 }

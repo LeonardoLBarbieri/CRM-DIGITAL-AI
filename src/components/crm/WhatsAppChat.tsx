@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Send, Check, CheckCheck, Loader2, Sparkles, Bot, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Send, Check, CheckCheck, Loader2, Sparkles, Bot, X, RefreshCw } from "lucide-react";
 import type { WhatsAppMessage } from "@prisma/client";
 
 interface WhatsAppChatProps {
@@ -9,6 +9,8 @@ interface WhatsAppChatProps {
   phone: string | null;
   leadName: string;
 }
+
+const POLL_INTERVAL = 10_000;
 
 export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
@@ -18,24 +20,12 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showAiMenu, setShowAiMenu] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (leadId) {
-      fetchMessages();
-      // Optional: Polling could be added here
-    }
-  }, [leadId]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const fetchMessages = async () => {
-    setLoading(true);
+  const fetchMessages = useCallback(async (showLoader = false) => {
+    if (!leadId) return;
+    if (showLoader) setLoading(true);
     try {
-      // Create an API route specifically to fetch messages for a lead
       const res = await fetch(`/api/whatsapp/messages?leadId=${leadId}`);
       if (res.ok) {
         const data = await res.json();
@@ -44,9 +34,28 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
     } catch (e) {
       console.error("Failed to fetch messages", e);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) {
+      fetchMessages(true);
+      pollRef.current = setInterval(() => {
+        fetchMessages(false);
+      }, POLL_INTERVAL);
+
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+      };
+    }
+  }, [leadId, fetchMessages]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,18 +63,17 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
 
     setSending(true);
     const tempId = Date.now().toString();
+    const messageToSend = input.trim();
+
     const newMsg: any = {
       id: tempId,
       leadId,
-      body: input.trim(),
+      body: messageToSend,
       sender: "system",
       status: "enviada",
       timestamp: new Date(),
     };
-    
-    // Optimistic update
     setMessages((prev) => [...prev, newMsg]);
-    const messageToSend = input.trim();
     setInput("");
 
     try {
@@ -73,22 +81,23 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: phone,
-          message: messageToSend,
           leadId,
+          message: messageToSend,
         }),
       });
-      
+
       if (!res.ok) {
-        throw new Error("Failed to send");
+        throw new Error("Falha ao enviar mensagem");
       }
-      
-      // Refresh to get actual DB record
-      fetchMessages();
-    } catch (e) {
-      console.error(e);
-      // Remove optimistic message or mark as failed
-      setMessages((prev) => prev.map(m => m.id === tempId ? { ...m, status: "falha" } : m));
+
+      await fetchMessages(false);
+    } catch (e: any) {
+      console.error("Erro ao enviar:", e);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId ? { ...m, status: "erro" } : m
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -101,7 +110,7 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
       const res = await fetch("/api/ai/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, leadId })
+        body: JSON.stringify({ type, leadId }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -119,67 +128,77 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
 
   if (!phone) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-card/50 text-muted-foreground p-6 text-center border rounded-xl">
-        <p>Este lead não possui um número de WhatsApp cadastrado.</p>
-        <p className="text-sm mt-2">Atualize o número na aba de detalhes para enviar mensagens.</p>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center h-full text-muted-foreground">
+        <p className="text-sm font-medium">Sem WhatsApp Cadastrado</p>
+        <p className="text-xs mt-1">Atualize o número para enviar mensagens.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] rounded-xl overflow-hidden border border-border relative">
-      {/* WhatsApp Header */}
-      <div className="bg-[#f0f2f5] dark:bg-[#202c33] px-4 py-3 flex items-center gap-3 border-b border-border z-10">
-        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold overflow-hidden shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-background relative">
+      {/* Header */}
+      <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border z-10">
+        <div className="w-9 h-9 bg-secondary rounded-full flex items-center justify-center text-foreground font-semibold text-sm shrink-0 border border-border">
           {leadName.charAt(0).toUpperCase()}
         </div>
-        <div>
-          <h3 className="font-semibold text-[#111b21] dark:text-[#e9edef] text-sm">{leadName}</h3>
-          <p className="text-xs text-[#667781] dark:text-[#8696a0]">{phone}</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-foreground text-sm truncate">{leadName}</h3>
+          <p className="text-xs text-muted-foreground">{phone}</p>
         </div>
+        <button
+          onClick={() => fetchMessages(true)}
+          className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+          title="Atualizar mensagens"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-[0.06] dark:opacity-5 pointer-events-none" style={{ backgroundImage: "url('https://static.whatsapp.net/rsrc.php/v3/yl/r/r_Q_5i2FWqO.png')" }}></div>
-
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 z-10 flex flex-col">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 z-10 flex flex-col bg-secondary/10">
         {loading && messages.length === 0 ? (
           <div className="flex items-center justify-center flex-1">
-            <Loader2 className="animate-spin text-gray-400" />
+            <Loader2 className="animate-spin text-muted-foreground" size={20} />
           </div>
         ) : messages.length === 0 ? (
-          <div className="bg-[#fff9c4] dark:bg-[#182229] text-[#111b21] dark:text-[#8696a0] text-xs py-2 px-4 rounded-xl mx-auto shadow-sm">
+          <div className="bg-secondary text-muted-foreground text-xs py-2 px-4 rounded-lg mx-auto border border-border">
             As mensagens enviadas para este lead aparecerão aqui.
           </div>
         ) : (
           messages.map((msg) => {
-            const isMe = msg.sender === "system";
+            const isMe = msg.sender === "system" || msg.sender === "broker";
+            const isAutomated = (msg as any).isAutomated;
             return (
-              <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} mb-1`}>
-                <div 
-                  className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm shadow-sm relative ${
-                    isMe 
-                      ? "bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111b21] dark:text-[#e9edef] rounded-tr-none" 
-                      : "bg-white dark:bg-[#202c33] text-[#111b21] dark:text-[#e9edef] rounded-tl-none"
+              <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm relative ${
+                    isMe
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : "bg-card text-foreground border border-border rounded-tl-sm"
                   }`}
                 >
                   <div className="flex flex-col">
+                    {isAutomated && (
+                      <span className="text-[10px] opacity-70 font-medium flex items-center gap-1 mb-1">
+                        <Bot size={10} /> IA Assistente
+                      </span>
+                    )}
                     <span className="whitespace-pre-wrap leading-relaxed">{msg.body}</span>
-                    <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[10px] text-black/40 dark:text-white/40">
+                    <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                      <span className="text-[10px] opacity-60">
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {isMe && (
-                        <span className="text-black/40 dark:text-white/40">
+                        <span className="opacity-80">
                           {msg.status === "lida" ? (
-                            <CheckCheck size={14} className="text-[#53bdeb]" />
+                            <CheckCheck size={12} className="text-blue-400" />
                           ) : msg.status === "entregue" ? (
-                            <CheckCheck size={14} />
-                          ) : msg.status === "falha" ? (
-                            <span className="text-red-500">Erro</span>
+                            <CheckCheck size={12} />
+                          ) : msg.status === "erro" ? (
+                            <span className="text-destructive text-[10px] font-medium">Erro</span>
                           ) : (
-                            <Check size={14} />
+                            <Check size={12} />
                           )}
                         </span>
                       )}
@@ -192,36 +211,37 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
         )}
       </div>
 
-      {/* Input */}
       {generatingAi && (
-        <div className="absolute bottom-16 left-0 right-0 bg-blue-500/10 text-blue-500 text-xs py-2 px-4 flex items-center justify-center gap-2 border-t border-blue-500/20 backdrop-blur-md z-20">
+        <div className="absolute bottom-16 left-0 right-0 bg-secondary/80 text-foreground text-xs py-2 px-4 flex items-center justify-center gap-2 border-t border-border backdrop-blur-md z-20">
           <Loader2 size={14} className="animate-spin" /> IA gerando mensagem...
         </div>
       )}
+
+      {/* Input */}
       <div className="relative z-10">
         <AnimateAiMenu show={showAiMenu} onSelect={handleAIAssist} onClose={() => setShowAiMenu(false)} />
-        <form onSubmit={handleSend} className="bg-[#f0f2f5] dark:bg-[#202c33] p-3 flex gap-2 items-center border-t border-border relative">
+        <form onSubmit={handleSend} className="bg-card p-3 flex gap-2 items-center border-t border-border">
           <button
             type="button"
             onClick={() => setShowAiMenu(!showAiMenu)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${showAiMenu ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0 border ${showAiMenu ? 'bg-primary text-primary-foreground border-transparent' : 'bg-background border-border text-muted-foreground hover:text-foreground'}`}
           >
-            <Sparkles size={20} />
+            <Sparkles size={16} />
           </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite uma mensagem"
-            className="flex-1 bg-white dark:bg-[#2a3942] text-[#111b21] dark:text-[#e9edef] border-none rounded-xl px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 shadow-sm"
+            placeholder="Digite uma mensagem..."
+            className="flex-1 bg-background text-foreground border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
             disabled={sending || generatingAi}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={!input.trim() || sending || generatingAi}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#00a884] hover:bg-[#008f6f] text-white transition-colors disabled:opacity-50 shrink-0 shadow-sm"
+            className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary text-primary-foreground transition-all disabled:opacity-50 shrink-0"
           >
-            {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-1" />}
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="ml-0.5" />}
           </button>
         </form>
       </div>
@@ -232,15 +252,16 @@ export function WhatsAppChat({ leadId, phone, leadName }: WhatsAppChatProps) {
 function AnimateAiMenu({ show, onSelect, onClose }: { show: boolean, onSelect: (type: string) => void, onClose: () => void }) {
   if (!show) return null;
   return (
-    <div className="absolute bottom-full left-4 mb-2 w-64 bg-card border border-border shadow-xl rounded-xl p-2 z-50 animate-in slide-in-from-bottom-2 fade-in">
-      <div className="flex justify-between items-center px-2 mb-2 pb-2 border-b border-border/50">
-        <span className="text-xs font-semibold text-blue-500 flex items-center gap-1"><Bot size={14} /> Assistente IA</span>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={14} /></button>
+    <div className="absolute bottom-full left-3 mb-2 w-64 bg-popover border border-border shadow-lg rounded-xl p-2 z-50 animate-in slide-in-from-bottom-2 fade-in">
+      <div className="flex justify-between items-center px-2 mb-2 pb-2 border-b border-border">
+        <span className="text-xs font-semibold flex items-center gap-1.5"><Bot size={14} /> Assistente IA</span>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X size={14} /></button>
       </div>
-      <button onClick={() => onSelect('generate_message')} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-secondary transition-colors">Gerar Saudação</button>
-      <button onClick={() => onSelect('followup_message')} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-secondary transition-colors">Mensagem de Follow-up</button>
-      <button onClick={() => onSelect('presentation_message')} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-secondary transition-colors">Apresentar Empreendimento</button>
-      <button onClick={() => onSelect('summarize_conversation')} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-blue-500/10 hover:text-blue-500 transition-colors mt-1 font-medium border border-transparent hover:border-blue-500/20">Resumir Conversa</button>
+      <div className="space-y-1">
+        <button onClick={() => onSelect('generate_message')} className="w-full text-left px-3 py-2 text-xs font-medium rounded-md hover:bg-secondary transition-colors">Gerar Saudação</button>
+        <button onClick={() => onSelect('followup_message')} className="w-full text-left px-3 py-2 text-xs font-medium rounded-md hover:bg-secondary transition-colors">Mensagem de Follow-up</button>
+        <button onClick={() => onSelect('presentation_message')} className="w-full text-left px-3 py-2 text-xs font-medium rounded-md hover:bg-secondary transition-colors">Apresentar Empreendimento</button>
+      </div>
     </div>
   );
 }

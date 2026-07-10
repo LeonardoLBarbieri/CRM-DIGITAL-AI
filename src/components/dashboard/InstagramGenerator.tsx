@@ -10,6 +10,8 @@ export function InstagramGenerator() {
   const [loading, setLoading] = useState(false);
   const [generatedPosts, setGeneratedPosts] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [generatingImages, setGeneratingImages] = useState<{ [key: number]: boolean }>({});
+  const [generatedImages, setGeneratedImages] = useState<{ [key: number]: string }>({});
 
   useEffect(() => {
     fetch("/api/properties")
@@ -58,6 +60,32 @@ export function InstagramGenerator() {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleGenerateImage = async (index: number, postText: string) => {
+    setGeneratingImages(prev => ({ ...prev, [index]: true }));
+    try {
+      // Summarize the post text to create a good image prompt
+      const prompt = `Crie uma imagem realista de alta qualidade para o Instagram relacionada ao seguinte texto, focado no mercado imobiliário: ${postText.substring(0, 150)}`;
+      
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGeneratedImages(prev => ({ ...prev, [index]: data.url }));
+      } else {
+        alert("Erro ao gerar imagem. Tente novamente.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao conectar à API de imagens.");
+    } finally {
+      setGeneratingImages(prev => ({ ...prev, [index]: false }));
+    }
   };
 
   return (
@@ -142,12 +170,32 @@ export function InstagramGenerator() {
                   >
                     {copiedIndex === idx ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                   </button>
-                  <div className="flex items-start gap-4 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center flex-shrink-0 mt-1">
-                      <ImageIcon size={14} className="text-white" />
+                  <div className="flex flex-col gap-4 mb-3">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center flex-shrink-0 mt-1">
+                        <ImageIcon size={14} className="text-white" />
+                      </div>
+                      <div className="flex-1 whitespace-pre-wrap font-medium text-foreground/90 text-sm leading-relaxed pr-8">
+                        {post}
+                      </div>
                     </div>
-                    <div className="flex-1 whitespace-pre-wrap font-medium text-foreground/90 text-sm leading-relaxed pr-8">
-                      {post}
+                    
+                    {/* Image Generation Section */}
+                    <div className="ml-12">
+                      {generatedImages[idx] ? (
+                        <div className="mt-2 rounded-xl overflow-hidden border border-border/50 max-w-sm">
+                          <img src={generatedImages[idx]} alt="Imagem gerada pela IA" className="w-full h-auto object-cover aspect-square" />
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleGenerateImage(idx, post)}
+                          disabled={generatingImages[idx]}
+                          className="mt-2 text-xs font-medium px-4 py-2 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {generatingImages[idx] ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+                          {generatingImages[idx] ? 'Gerando Imagem...' : 'Gerar Imagem com IA'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
