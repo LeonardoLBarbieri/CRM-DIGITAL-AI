@@ -35,26 +35,44 @@ export function CrmDashboard() {
   // === CSV Ref ===
   const csvFileRef = useRef<HTMLInputElement>(null);
 
+  // === Polling & Notifications ===
+  const prevLeadsCount = useRef<number | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
+
   // ────────────────────────────────────────────
-  // Fetch leads on mount
+  // Fetch leads on mount & polling
   // ────────────────────────────────────────────
-  const fetchLeads = useCallback(async () => {
-    setLoadingLeads(true);
+  const fetchLeads = useCallback(async (isPolling = false) => {
+    if (!isPolling) setLoadingLeads(true);
     try {
       const res = await fetch("/api/leads");
       if (res.ok) {
         const data = await res.json();
-        setLeads(Array.isArray(data) ? data : (data.leads || []));
+        const fetchedLeads = Array.isArray(data) ? data : (data.leads || []);
+        
+        if (prevLeadsCount.current !== null && fetchedLeads.length > prevLeadsCount.current) {
+          setShowNotification(true);
+          setTimeout(() => setShowNotification(false), 5000);
+          try {
+            const audio = new Audio("https://cdn.freesound.org/previews/515/515652_11308343-lq.mp3");
+            audio.play().catch(() => {});
+          } catch(e) {}
+        }
+        
+        prevLeadsCount.current = fetchedLeads.length;
+        setLeads(fetchedLeads);
       }
     } catch (e) {
       console.error(e);
     } finally {
-      setLoadingLeads(false);
+      if (!isPolling) setLoadingLeads(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchLeads();
+    fetchLeads(false);
+    const interval = setInterval(() => fetchLeads(true), 10000);
+    return () => clearInterval(interval);
   }, [fetchLeads]);
 
   // ────────────────────────────────────────────
@@ -164,7 +182,15 @@ export function CrmDashboard() {
   // Render
   // ────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
+      {/* Toast Notification */}
+      {showNotification && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
+          <MessageSquare size={18} className="animate-pulse" />
+          <span className="font-semibold text-sm">Novo lead recebido!</span>
+        </div>
+      )}
+
       <SectionHeader
         icon={<MessageSquare size={22} />}
         title="Gestão de Leads (CRM)"

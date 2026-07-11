@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
         // ── Mensagem recebida de um usuário ──────────────────────────────
         const message = body.entry[0].changes[0].value.messages[0];
-        const contact = body.entry[0].changes[0].value.contacts[0];
+        const contact = body.entry[0].changes[0].value.contacts?.[0];
 
         const fromPhone = message.from; // ex: "5511999999999"
         const msgBody = message.text?.body;

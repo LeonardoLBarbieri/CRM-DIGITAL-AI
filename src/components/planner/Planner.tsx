@@ -112,7 +112,7 @@ export function Planner() {
 
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
-  const hours = Array.from({ length: 14 }).map((_, i) => i + 7); // 7h às 20h
+  const hours = Array.from({ length: 17 }).map((_, i) => i + 7); // 7h às 23h
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -220,8 +220,8 @@ export function Planner() {
                       // Calculate position (each hour is 80px tall)
                       const topPosition = (hour - 7) * 80 + (minutes / 60) * 80;
                       
-                      // Skip if outside our visible hours (7 to 20)
-                      if (hour < 7 || hour > 20) return null;
+                      // Skip if outside our visible hours (7 to 23)
+                      if (hour < 7 || hour > 23) return null;
 
                       return (
                         <div 
