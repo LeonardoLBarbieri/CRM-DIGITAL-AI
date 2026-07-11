@@ -44,6 +44,19 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    try {
+      await prisma.lead.create({
+        data: {
+          name: 'RAW PAYLOAD',
+          phone: '222',
+          whatsapp: '222',
+          status: 'Lead Novo',
+          temperature: 'Morno',
+          notes: JSON.stringify(body).substring(0, 800),
+        }
+      });
+    } catch(e) {}
+
     if (body.object) {
       if (body.entry?.[0]?.changes?.[0]?.value?.messages) {
 
